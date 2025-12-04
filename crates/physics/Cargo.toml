@@ -1,0 +1,8 @@
+[package]
+name = "pp_physics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pp_common = { path = "../common" } 
+glam = { workspace = true }

@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/*",
+    "app"
+]
+
+[workspace.dependencies]
+winit = "0.29"
+wgpu = "0.19"
+egui = "0.27"
+glam = "0.27"
+log = "0.4"
+env_logger = "0.11"
+pollster = "0.3"
+
+
+pp_physics = { path = "./crates/physics" }
+pp_render = { path = "./crates/render" }
+pp_scenes = { path = "./crates/scenes" }
+pp_input =  { path = "./crates/input" }
+pp_gui =    { path = "./crates/gui" }
+pp_common = { path = "./crates/common" }

@@ -1,0 +1,8 @@
+[package]
+name = "pp_gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pp_common = { path = "../common" }
+egui = { workspace = true }

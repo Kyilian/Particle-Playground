@@ -1,0 +1,9 @@
+[package]
+name = "pp_render"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pp_common = { path = "../common" }
+wgpu = { workspace = true }
+winit = { workspace = true }
