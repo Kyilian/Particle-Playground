@@ -3,7 +3,7 @@ resolver = "2"
 members = [
     "crates/*",
     "app"
-]
+, "examples/simple_demo"]
 
 [workspace.dependencies]
 winit = "0.29"

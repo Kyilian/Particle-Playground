@@ -1,0 +1,29 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+
+    - name: Install Rust Toolchain
+      run: rustup component add rustfmt
+
+    - name: Check Formatting
+      run: cargo fmt -- --check
+
+    - name: Build
+      run: cargo check --verbose
+
+    - name: Run Tests
+      run: cargo test --verbose
