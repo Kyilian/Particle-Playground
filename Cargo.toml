@@ -6,14 +6,33 @@ members = [
 , "examples/simple_demo"]
 
 [workspace.dependencies]
+#Core und Window handeling
 winit = "0.29"
 wgpu = "0.19"
-egui = "0.27"
-glam = "0.27"
-log = "0.4"
-env_logger = "0.11"
 pollster = "0.3"
 
+#GUI
+egui = "0.27"
+egui-winit = "0.27"
+egui-wgpu = "0.27"
+
+#Logging
+log = "0.4"
+env_logger = "0.11"
+
+#Für die Buffer-Uploads
+bytemuck = { version = "1.16", features = ["derive", "min_const_generics"] }
+
+#Mathe
+glam = "0.27"
+
+#Zufall
+rand = "0.8"
+rand_distr = "0.4"
+
+#Config laden
+serde = { version = "1.0", features = ["derive"] }
+ron = "0.8"
 
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
