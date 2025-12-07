@@ -17,9 +17,9 @@ impl World {
         self.particles.len() - 1 //stellen rückgabe des eingefügten particels
     }
 
-    pub fn update_positions(&mut self) {
+    pub fn update_positions(&mut self, dt: f32) {
         for p in &mut self.particles {
-            p.pos += p.vel;
+            p.pos += p.vel * dt; //Pixel pro sekunde nicht pro frame 
         }
     }
 }
@@ -37,7 +37,7 @@ mod test {
         let id = world.add_particle(Particle::new(Vec2::new(0.0, 0.0)));
         world.particles[id].vel = Vec2::new(1.0, 1.0);
 
-        world.update_positions();
+        world.update_positions(1.0);
         assert_eq!(world.particles[id].pos, Vec2::new(1.0, 1.0));
     }
 }
