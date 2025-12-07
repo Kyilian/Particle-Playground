@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::sync::Arc;     //Arc for dual ownership
+use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 
 use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
@@ -19,11 +19,11 @@ impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // creates event loop and window
         let event_loop = EventLoop::new()?;
-        let window = Arc::new(
+        let window = Arc::new(      //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
                 .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
-                .build(&event_loop)?
+                .build(&event_loop)?,
         );
 
         // initializes WGPU
@@ -54,7 +54,7 @@ impl RenderWindow {
             None,
         ))?;
 
-        // configures the surface
+        // configures the surface of the screen
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -83,26 +83,28 @@ impl RenderWindow {
             config,
         };
 
-        // runs event loop
+        // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::CloseRequested,
+                    event: WindowEvent::CloseRequested, //closing the window
                     ..
                 } => {
                     elwt.exit();
                 }
                 Event::WindowEvent {
-                    event: WindowEvent::Resized(physical_size),
+                    event: WindowEvent::Resized(physical_size),  //resizing the window
                     ..
                 } => {
                     render_window.resize(physical_size.width, physical_size.height);
                 }
-                Event::AboutToWait => {
+                Event::AboutToWait => {  //renders when all pending events are finished
                     // renders frame
                     match render_window.render() {
                         Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => render_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT),
+                        Err(wgpu::SurfaceError::Lost) => {
+                            render_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
+                        }
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             eprintln!("Out of memory!");
                             elwt.exit();
@@ -116,7 +118,7 @@ impl RenderWindow {
                 _ => {}
             }
 
-            elwt.set_control_flow(ControlFlow::Poll);
+            elwt.set_control_flow(ControlFlow::Poll);       //sets loop to run as fast as possible and constantly fire AboutToWait -> renders every frame
         })?;
 
         Ok(())
@@ -133,14 +135,18 @@ impl RenderWindow {
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         // gets the current frame
         let output = self.surface.get_current_texture()?;
-        let view = output.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = output
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
         // creates command encoder
-        let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Render Encoder"),
-        });
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
 
-        // creates render pass with black clear color
+        // creates render pass with black clear color to remove artifacts
         {
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -161,7 +167,7 @@ impl RenderWindow {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            // renders pass ends here automatically when dropped
+            // render pass ends here automatically when dropped
         }
 
         // submit commands
@@ -171,7 +177,7 @@ impl RenderWindow {
         Ok(())
     }
 
-    // Public access to WGPU resources for particle rendering with multiple particles
+    // Public access to WGPU resources for particle rendering
     pub fn device(&self) -> &Device {
         &self.device
     }

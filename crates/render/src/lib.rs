@@ -4,8 +4,8 @@ pub fn add(left: u64, right: u64) -> u64 {
 
 mod window;
 
-pub use window::RenderWindow;
 pub use wgpu;
+pub use window::RenderWindow;
 
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 600;
