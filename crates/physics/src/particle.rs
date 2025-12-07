@@ -1,6 +1,6 @@
 use glam::Vec2;
 
-#[derive(Debug, Clone, Copy)] 
+#[derive(Debug, Clone, Copy)]
 pub struct Particle {
     pub pos: Vec2,
     pub vel: Vec2,

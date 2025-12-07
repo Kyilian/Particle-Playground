@@ -19,7 +19,7 @@ impl World {
 
     pub fn update_positions(&mut self, dt: f32) {
         for p in &mut self.particles {
-            p.pos += p.vel * dt; //Pixel pro sekunde nicht pro frame 
+            p.pos += p.vel * dt; //Pixel pro sekunde nicht pro frame
         }
     }
 }
