@@ -1,9 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "crates/*",
-    "app"
-, "examples/simple_demo"]
+members = ["crates/*","app", "examples/simple_demo"]
 
 [workspace.dependencies]
 #Core und Window handeling
@@ -33,6 +30,9 @@ rand_distr = "0.4"
 #Config laden
 serde = { version = "1.0", features = ["derive"] }
 ron = "0.8"
+
+#Benchmarks
+criterion = "0.8.0"
 
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
