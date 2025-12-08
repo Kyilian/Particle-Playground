@@ -18,7 +18,7 @@ pub struct RenderWindow {
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // creates event loop and window
-        let event_loop = EventLoop::new()?;
+        let event_loop = EventLoop::new().unwrap();
         let window = Arc::new(      //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
