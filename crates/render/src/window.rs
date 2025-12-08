@@ -1,4 +1,4 @@
-use std::sync::Arc;     //Arc for dual ownership
+use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
     event::{Event, WindowEvent},
@@ -19,7 +19,8 @@ impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
-        let window = Arc::new(      //Arc is needed because window needs to be owned by the buffer AND the surface
+        let window = Arc::new(
+            //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
                 .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -93,12 +94,13 @@ impl RenderWindow {
                     elwt.exit();
                 }
                 Event::WindowEvent {
-                    event: WindowEvent::Resized(physical_size),  //resizing the window
+                    event: WindowEvent::Resized(physical_size), //resizing the window
                     ..
                 } => {
                     render_window.resize(physical_size.width, physical_size.height);
                 }
-                Event::AboutToWait => {  //renders when all pending events are finished
+                Event::AboutToWait => {
+                    //renders when all pending events are finished
                     // renders frame
                     match render_window.render() {
                         Ok(_) => {}
@@ -118,7 +120,7 @@ impl RenderWindow {
                 _ => {}
             }
 
-            elwt.set_control_flow(ControlFlow::Poll);       //sets loop to run as fast as possible and constantly fire AboutToWait -> renders every frame
+            elwt.set_control_flow(ControlFlow::Poll); //sets loop to run as fast as possible and constantly fire AboutToWait -> renders every frame
         })?;
 
         Ok(())
