@@ -4,8 +4,8 @@ members = ["crates/*","app", "examples/simple_demo"]
 
 [workspace.dependencies]
 #Core und Window handeling
-winit = "0.29"
-wgpu = "0.19"
+winit = "0.29" 
+wgpu = "23"
 pollster = "0.3"
 
 #GUI
