@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 pp_common = { path = "../common" }
 pp_physics = { path = "../physics" }
+
+pp_render = { path = "../render" }
+egui =  {workspace = true}

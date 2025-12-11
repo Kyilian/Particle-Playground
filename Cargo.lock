@@ -1217,8 +1217,10 @@ dependencies = [
 name = "pp_scenes"
 version = "0.1.0"
 dependencies = [
+ "egui",
  "pp_common",
  "pp_physics",
+ "pp_render",
 ]
 
 [[package]]
