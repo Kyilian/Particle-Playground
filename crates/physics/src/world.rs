@@ -1,5 +1,10 @@
+use std::vec;
+
 use crate::{CircleCollider, Particle};
 use glam::Vec2;
+
+//Adding const to simply change the values if needed
+const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, -9.81);
 
 pub struct World {
     pub particles: Vec<Particle>,
@@ -17,7 +22,7 @@ impl World {
     pub fn new() -> Self {
         Self {
             particles: Vec::new(),
-            gravity: Vec2::new(0.0, -9.81),
+            gravity: DEFAULT_GRAVITY,
             colliders: Vec::new(),
         }
     }
@@ -66,7 +71,20 @@ impl World {
             }
         }
     }
-    //evtl noch step() fn einbauen ... step = „ein Simulationsschritt“ (forces → integration → collisions)
+    //ein "Simulationsschritt“ (forces → integration → collisions)
+    pub fn step(&mut self, dt: f32){
+        self.apply_forces();
+        self.update_positions(dt);
+        self.solve_collisions();
+        
+    }
+
+    //resets all particles
+    pub fn clear(&mut self){
+        self.particles.clear();
+        self.colliders.clear();
+        self.gravity= DEFAULT_GRAVITY;
+    }
 }
 
 #[cfg(test)]

@@ -10,7 +10,7 @@ pub trait Scene {
 
     fn on_click(&mut self, world: &mut World, x: f32, y: f32);
 
-    fn reset(&mut self);
+    fn reset(&mut self, world: &mut World);
 
     fn ui(&mut self, ctx: &Context, world: &mut World);
 }

@@ -10,7 +10,7 @@ pub struct FallingParticles {
 impl FallingParticles {
     pub fn new() -> Self {
         Self {
-            gravity: 500.0, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
+            gravity: -9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
             spawn_position: Vec2::new(100.0, 200.0),
             spawnrate: None,
         }
@@ -27,7 +27,7 @@ impl Scene for FallingParticles {
     //update particle position in world
     fn update(&mut self, _world: &mut World, _dt: f32) {
         _world.gravity = Vec2::new(0.0, self.gravity);
-        // world.step(dt); step ist noch nicht implementiert
+        _world.step(_dt); 
     }
 
     //call to the render function
@@ -47,11 +47,10 @@ impl Scene for FallingParticles {
 
 
     //Reset the Simulation to Default values
-    fn reset(&mut self) {
+    fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
-        self.gravity = 500.0;
         self.spawn_position = Vec2::new(100.0, 200.0);
-        //self.world.clear();
+        _world.clear();
     }
     
     //Basic UI to test Sliders and Buttos
@@ -65,7 +64,7 @@ impl Scene for FallingParticles {
             ui.label(format!("Partikel: {}", _world.particles.len()));
 
             if ui.button("Alles zurücksetzen").clicked() {
-                self.reset();
+                self.reset(_world);
             }
         });
     }
