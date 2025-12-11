@@ -1,10 +1,13 @@
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, ElementState, MouseButton},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-};
+    keyboard::{Key, NamedKey},
+    };
+use glam::Vec2;
+use pp_physics::{World, Particle};
 
 use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
@@ -84,6 +87,10 @@ impl RenderWindow {
             config,
         };
 
+        // physics world + mausposition
+        let mut world = World::new();
+        let mut mouse_pos = Vec2::ZERO;
+
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -92,6 +99,33 @@ impl RenderWindow {
                     ..
                 } => {
                     elwt.exit();
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::KeyboardInput { event, .. }, //closing the window when pressing ESC
+                    ..
+                } => {
+                    if event.state == ElementState::Pressed {
+                        if let Key::Named(NamedKey::Escape) = event.logical_key {
+                            elwt.exit();
+                        }
+                    }
+                }
+                // mausposition ausgeben
+                Event::WindowEvent {
+                    event: WindowEvent::CursorMoved { position, .. },
+                    ..
+                } => {
+                    mouse_pos = Vec2::new(position.x as f32, position.y as f32);
+                    println!("Mouse at: x = {}, y = {}", position.x, position.y);
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::MouseInput { state, button, .. },
+                    ..
+                } => {
+                    if state == ElementState::Pressed && button == MouseButton::Left {
+                        let id = world.add_particle(Particle::new(mouse_pos));
+                    println!("Spawned particle #{id} at {:?}", mouse_pos);
+                    }
                 }
                 Event::WindowEvent {
                     event: WindowEvent::Resized(physical_size), //resizing the window
