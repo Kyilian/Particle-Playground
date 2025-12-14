@@ -18,6 +18,23 @@ pub struct RenderWindow {
     config: SurfaceConfiguration,
 }
 
+// funktion für nearest neighbour search
+fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
+    let mut nearest: Option<usize> = None;
+    let mut nearest_dist2 = f32::MAX;
+
+    for (i, p) in world.particles.iter().enumerate() {
+        let d = p.pos - mouse_pos;
+        let dist2 = d.length_squared();
+
+        if dist2 < nearest_dist2 {
+            nearest_dist2 = dist2;
+            nearest = Some(i);
+        }
+    }
+    nearest
+}
+
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         // creates event loop and window
@@ -123,8 +140,18 @@ impl RenderWindow {
                     ..
                 } => {
                     if state == ElementState::Pressed && button == MouseButton::Left {
+                        // Linksklick: Partikel spawnen
                         let id = world.add_particle(Particle::new(mouse_pos));
-                    println!("Spawned particle #{id} at {:?}", mouse_pos);
+                        println!("Spawned particle #{id} at {:?}", mouse_pos);
+                    }
+                    if state == ElementState::Pressed && button == MouseButton::Right {
+                        // Rechtsklick: nächsten Partikel finden
+                        if let Some(nearest) = find_nearest_particle(&world, mouse_pos) {
+                            let p = &world.particles[nearest];
+                            println!("Nearest particle is #{nearest} at pos {:?} to mouse {:?}", p.pos, mouse_pos);
+                        } else {
+                            println!("No particle close to {:?}", mouse_pos);
+                        }
                     }
                 }
                 Event::WindowEvent {
