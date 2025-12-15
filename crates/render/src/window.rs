@@ -1,8 +1,11 @@
+use glam::Vec2;
+use pp_physics::{Particle, World};
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
-    event::{Event, WindowEvent},
+    event::{ElementState, Event, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
+    keyboard::{Key, NamedKey},
     window::WindowBuilder,
 };
 
@@ -13,6 +16,23 @@ pub struct RenderWindow {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+}
+
+// funktion für nearest neighbour search
+fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
+    let mut nearest: Option<usize> = None;
+    let mut nearest_dist2 = f32::MAX;
+
+    for (i, p) in world.particles.iter().enumerate() {
+        let d = p.pos - mouse_pos;
+        let dist2 = d.length_squared();
+
+        if dist2 < nearest_dist2 {
+            nearest_dist2 = dist2;
+            nearest = Some(i);
+        }
+    }
+    nearest
 }
 
 impl RenderWindow {
@@ -84,6 +104,10 @@ impl RenderWindow {
             config,
         };
 
+        // physics world + mausposition
+        let mut world = World::new();
+        let mut mouse_pos = Vec2::ZERO;
+
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -92,6 +116,46 @@ impl RenderWindow {
                     ..
                 } => {
                     elwt.exit();
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::KeyboardInput { event, .. }, //closing the window when pressing ESC
+                    ..
+                } => {
+                    if event.state == ElementState::Pressed {
+                        if let Key::Named(NamedKey::Escape) = event.logical_key {
+                            elwt.exit();
+                        }
+                    }
+                }
+                // mausposition ausgeben
+                Event::WindowEvent {
+                    event: WindowEvent::CursorMoved { position, .. },
+                    ..
+                } => {
+                    mouse_pos = Vec2::new(position.x as f32, position.y as f32);
+                    println!("Mouse at: x = {}, y = {}", position.x, position.y);
+                }
+                Event::WindowEvent {
+                    event: WindowEvent::MouseInput { state, button, .. },
+                    ..
+                } => {
+                    if state == ElementState::Pressed && button == MouseButton::Left {
+                        // Linksklick: Partikel spawnen
+                        let id = world.add_particle(Particle::new(mouse_pos));
+                        println!("Spawned particle #{id} at {:?}", mouse_pos);
+                    }
+                    if state == ElementState::Pressed && button == MouseButton::Right {
+                        // Rechtsklick: nächsten Partikel finden
+                        if let Some(nearest) = find_nearest_particle(&world, mouse_pos) {
+                            let p = &world.particles[nearest];
+                            println!(
+                                "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
+                                p.pos, mouse_pos
+                            );
+                        } else {
+                            println!("No particle close to {:?}", mouse_pos);
+                        }
+                    }
                 }
                 Event::WindowEvent {
                     event: WindowEvent::Resized(physical_size), //resizing the window

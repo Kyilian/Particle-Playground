@@ -1137,8 +1137,10 @@ dependencies = [
 name = "pp_render"
 version = "0.1.0"
 dependencies = [
+ "glam",
  "pollster",
  "pp_common",
+ "pp_physics",
  "wgpu",
  "winit",
 ]

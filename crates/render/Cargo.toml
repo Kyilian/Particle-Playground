@@ -8,3 +8,5 @@ pp_common = { path = "../common" }
 wgpu = { workspace = true }
 winit = { workspace = true }      
 pollster = { workspace = true }
+glam = { workspace = true }
+pp_physics = { workspace = true }
