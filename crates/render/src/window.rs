@@ -1,13 +1,13 @@
+use glam::Vec2;
+use pp_physics::{Particle, World};
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
-    event::{Event, WindowEvent, ElementState, MouseButton},
+    event::{ElementState, Event, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
     keyboard::{Key, NamedKey},
-    };
-use glam::Vec2;
-use pp_physics::{World, Particle};
+    window::WindowBuilder,
+};
 
 use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
 
@@ -148,7 +148,10 @@ impl RenderWindow {
                         // Rechtsklick: nächsten Partikel finden
                         if let Some(nearest) = find_nearest_particle(&world, mouse_pos) {
                             let p = &world.particles[nearest];
-                            println!("Nearest particle is #{nearest} at pos {:?} to mouse {:?}", p.pos, mouse_pos);
+                            println!(
+                                "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
+                                p.pos, mouse_pos
+                            );
                         } else {
                             println!("No particle close to {:?}", mouse_pos);
                         }
