@@ -8,14 +8,14 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::WindowBuilder,
 };
-
-use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
+use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub struct RenderWindow {
     surface: Surface<'static>,
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+    particle_renderer: ParticleRenderer,
 }
 
 // funktion für nearest neighbour search
@@ -96,12 +96,16 @@ impl RenderWindow {
         };
         surface.configure(&device, &config);
 
+        //creates particle renderer
+        let particle_renderer = ParticleRenderer::new(&device, &config);
+
         // creates render window state
         let mut render_window = Self {
             surface,
             device,
             queue,
             config,
+            particle_renderer,
         };
 
         // physics world + mausposition
@@ -165,6 +169,14 @@ impl RenderWindow {
                 }
                 Event::AboutToWait => {
                     //renders when all pending events are finished
+
+                    //physik update
+                    let dt = 0.016;
+                    world.step(dt);
+
+                    //copy to GPU
+                    render_window.particle_renderer.update_particles(&world.particles, &render_window.queue);
+
                     // renders frame
                     match render_window.render() {
                         Ok(_) => {}
@@ -195,6 +207,9 @@ impl RenderWindow {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
+
+            //new renderer incase window gets resized
+            self.particle_renderer = ParticleRenderer::new(&self.device, &self.config);
         }
     }
 
@@ -214,7 +229,7 @@ impl RenderWindow {
 
         // creates render pass with black clear color to remove artifacts
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -233,6 +248,10 @@ impl RenderWindow {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+
+            //draw particle
+            self.particle_renderer.render(&mut render_pass);
+
             // render pass ends here automatically when dropped
         }
 

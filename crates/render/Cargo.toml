@@ -10,3 +10,4 @@ winit = { workspace = true }
 pollster = { workspace = true }
 glam = { workspace = true }
 pp_physics = { workspace = true }
+bytemuck = {workspace = true }

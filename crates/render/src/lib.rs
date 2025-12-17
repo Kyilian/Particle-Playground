@@ -1,7 +1,9 @@
 mod window;
+mod particle_renderer;
 
 pub use wgpu;
 pub use window::RenderWindow;
+pub use particle_renderer::ParticleRenderer;
 
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 600;
