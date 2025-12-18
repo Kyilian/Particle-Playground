@@ -2,7 +2,7 @@ use crate::{CircleCollider, Particle};
 use glam::Vec2;
 
 //Adding const to simply change the values if needed
-const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, -9.81);
+const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, 9.81);
 
 pub struct World {
     pub particles: Vec<Particle>,
@@ -126,9 +126,6 @@ mod test {
 
         assert_eq!(world.particles.len(), 0, "Partikel sollten weg sein");
         assert_eq!(world.colliders.len(), 0, "Collider sollten weg sein");
-        assert_eq!(
-            world.gravity.y, -9.81,
-            "Gravity sollte wieder Standard sein"
-        );
+        assert_eq!(world.gravity.y, 9.81, "Gravity sollte wieder Standard sein");
     }
 }

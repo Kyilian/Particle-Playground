@@ -1,3 +1,4 @@
+use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 use glam::Vec2;
 use pp_physics::{Particle, World};
 use std::sync::Arc; //Arc for dual ownership
@@ -8,7 +9,6 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::WindowBuilder,
 };
-use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 
 pub struct RenderWindow {
     surface: Surface<'static>,
@@ -37,6 +37,7 @@ fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
 
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+        let mut last_time = std::time::Instant::now();
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
         let window = Arc::new(
@@ -58,7 +59,7 @@ impl RenderWindow {
 
         // requests adapter
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
+            power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
         }))
@@ -170,12 +171,16 @@ impl RenderWindow {
                 Event::AboutToWait => {
                     //renders when all pending events are finished
 
-                    //physik update
-                    let dt = 0.016;
+                    //physic update
+                    let current_time = std::time::Instant::now();
+                    let dt = (current_time - last_time).as_secs_f32();
+                    last_time = current_time;
                     world.step(dt);
 
                     //copy to GPU
-                    render_window.particle_renderer.update_particles(&world.particles, &render_window.queue);
+                    render_window
+                        .particle_renderer
+                        .update_particles(&world.particles, &render_window.queue);
 
                     // renders frame
                     match render_window.render() {
