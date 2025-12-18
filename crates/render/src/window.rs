@@ -45,6 +45,7 @@ impl RenderWindow {
             WindowBuilder::new()
                 .with_title("Particle Playground")
                 .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
+                .with_resizable(false)
                 .build(&event_loop)?,
         );
 

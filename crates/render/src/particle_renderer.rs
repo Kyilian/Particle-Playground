@@ -2,35 +2,42 @@ use pp_physics::Particle;
 use wgpu::util::DeviceExt;
 use wgpu::{Device, Queue, SurfaceConfiguration};
 
+// WGSL Shader Code (WebGPU Shading Language)
+// Wird auf der GPU für jeden Partikel ausgeführt
 const SHADER_SOURCE: &str = r#"
 // Vertex Shader Output / Fragment Shader Input
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) uv: vec2<f32>, // Für Kreis berechnung
+    @location(0) uv: vec2<f32>, // Koordinate für Kreis berechnung
 };
 
 // Vertex Shader
 @vertex
 fn vs_main(
-    @location(0) vertex_pos: vec2<f32>,     // Quad-Ecke
-    @location(1) instance_pos: vec2<f32>,    // Partikel_Position
+    @location(0) vertex_pos: vec2<f32>,         // Quad-Ecke
+    @location(1) instance_pos: vec2<f32>,       // Partikel_Position
 ) -> VertexOutput {
     var out: VertexOutput; 
 
+    // konstanten für die Partikel Darstelliung
     let particle_size: f32 = 12.0;      //      ----------!!als Parameter setzen später!!----------
     let screen_width: f32 = 800.0;      // man kann hier nicht auf die Rust-konstanten zurückgreifen
     let screen_height: f32 = 600.0;     // Funktion die sich wie fenster an resize anpasst?
 
+    // quad von -0.5 bis +0.5 auf pixel-größe skalieren
     let scaled_pos = vertex_pos * particle_size;
 
+    // partikel position im screen-space verschieben
     let screen_pos = scaled_pos + instance_pos;
 
-    //zu Pixel koordinaten konvertieren
+    // zu Pixel koordinaten konvertieren (normalized device coordinates)
     let ndc_x = (screen_pos.x / screen_width) * 2.0 - 1.0;
     let ndc_y = -((screen_pos.y / screen_height) * 2.0 - 1.0);
 
     out.clip_position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
 
+    // uv koordinate für fragment shader setzen
+    // Quad Ecken werden zu -1 bis +1 für Distanz berechnung
     out.uv = vertex_pos * 2.0; //UV-Koordinaten für Kreis-Test im Fragment Shader
 
     return out;
@@ -41,58 +48,64 @@ fn vs_main(
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dist = length(in.uv);
     if (dist > 1.0) {
-        discard;    //wenn Pixel außerhalb des Kreises wird er nicht gerendert
+        discard;    // wenn Pixel außerhalb des Kreises wird er nicht gerendert
     }
 
+    // Pixel im Kreis werden weiß gezeichnet (RGBA)
     return vec4<f32>(1.0, 1.0, 1.0, 1.0); //Pixel im Kreis werden weiß gezeichnet
 }
 
 "#;
 
+// Renderer für Partikel als Kreise mit GPU-Instancing
+// jeder partikel wird als kleines Quad (2 Dreiecke) dargestellt,
+// der Fragment Shader macht daraus einen Kreis.
 pub struct ParticleRenderer {
-    render_pipeline: wgpu::RenderPipeline,
-    vertex_buffer: wgpu::Buffer,
-    instance_buffer: wgpu::Buffer,
-    instance_count: u32, //how many particles
-    max_particles: u32,  //can be used later to give out how many particles there are
+    render_pipeline: wgpu::RenderPipeline, // GPU Pipeline für Rendering
+    vertex_buffer: wgpu::Buffer,           // Quad Geometrie
+    instance_buffer: wgpu::Buffer,         // Partikel-positionen
+    instance_count: u32,                   // Partikelanzahl
+    max_particles: u32,                    // kann später für Buffer Kapazität benutzt werden
 }
 
+// repräsentation eines Partikels in GPU
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct ParticleInstance {
-    position: [f32; 2],
+    position: [f32; 2], // x und y in Fenster
 }
 
-//jeder Partikel wird als kleines Quad bzw Rechteck dargestellt
+// ein Eckpunkt eines Quads
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
-    position: [f32; 2],
+    position: [f32; 2], // x und y relativ zu Zentrum
 }
 
 impl Vertex {
-    //4 ecken des Quadrats als 2 dreiecke
+    // 4 ecken des Quadrats als 2 dreiecke
     const QUAD: [Vertex; 6] = [
         Vertex {
-            position: [-0.5, -0.5],
-        }, //u l
+            position: [-0.5, -0.5], //u l
+        },
         Vertex {
-            position: [0.5, -0.5],
-        }, //u r
+            position: [0.5, -0.5], //u r
+        },
         Vertex {
-            position: [0.5, 0.5],
-        }, //o r
+            position: [0.5, 0.5], //o r
+        },
         Vertex {
-            position: [-0.5, -0.5],
-        }, //u l
+            position: [-0.5, -0.5], //u l
+        },
         Vertex {
-            position: [0.5, 0.5],
-        }, //o r
+            position: [0.5, 0.5], //o r
+        },
         Vertex {
-            position: [-0.5, 0.5],
-        }, //o l
+            position: [-0.5, 0.5], //o l
+        },
     ];
 
+    // Vertex Layout für WGPU
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -107,6 +120,7 @@ impl Vertex {
 }
 
 impl ParticleInstance {
+    // Instance Layout für WGPU
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<ParticleInstance>() as wgpu::BufferAddress,
@@ -132,6 +146,8 @@ impl ParticleRenderer {
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Particle Render Pipeline"),
             layout: None, //automatisches layout
+
+            // Vertex Shader
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
@@ -141,12 +157,13 @@ impl ParticleRenderer {
                 ],
                 compilation_options: Default::default(),
             },
+            // Fragment Shader
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    format: config.format,                         // Surface Format
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING), // Alpha Blending on
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
                 compilation_options: Default::default(),
@@ -168,6 +185,7 @@ impl ParticleRenderer {
             usage: wgpu::BufferUsages::VERTEX,
         });
 
+        // Instance Buffer, wird für jeden Frame aktualisiert
         let max_particles = 10000; //max 10k particles
         let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Instance Buffer"),
@@ -185,6 +203,7 @@ impl ParticleRenderer {
         }
     }
 
+    // Aktualisiert die Partikel-Positionen auf der GPU
     pub fn update_particles(&mut self, particles: &[Particle], queue: &Queue) {
         //Particle -> ParticleInstance
         let instances: Vec<ParticleInstance> = particles
@@ -203,9 +222,10 @@ impl ParticleRenderer {
         }
     }
 
+    // Rendert alle Partikel in einem Draw-Call
     pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         if self.instance_count == 0 {
-            return;
+            return; // macht nichts wenn keine Artikel vorhanden
         }
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
