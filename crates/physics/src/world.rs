@@ -98,7 +98,7 @@ mod test {
         world.apply_forces();
         world.update_positions(1.0);
         let p = world.particles[id];
-        let expected = Vec2::new(0.0, -9.81);
+        let expected = Vec2::new(0.0, 9.81);
 
         assert!(
             (p.pos - expected).length() < 0.001,
