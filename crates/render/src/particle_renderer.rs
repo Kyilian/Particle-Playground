@@ -33,8 +33,11 @@ fn vs_main(
     // quad von -0.5 bis +0.5 auf pixel-größe skalieren
     let scaled_pos = vertex_pos * particle_size;
 
+    //hinzugefügt um den Center in die Mitte zu verschieben für Circle_collider
+    let center_offset = globals.screen_size / 2.0;
+
     // partikel position im screen-space verschieben
-    let screen_pos = scaled_pos + instance_pos;
+    let screen_pos = scaled_pos + instance_pos + center_offset;
 
     // zu Pixel koordinaten konvertieren (normalized device coordinates)
     let ndc_x = (screen_pos.x / globals.screen_size.x) * 2.0 - 1.0;

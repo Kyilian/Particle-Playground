@@ -1,6 +1,6 @@
 use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 use glam::Vec2;
-use pp_physics::{Particle, World};
+use pp_physics::{CircleCollider, Particle, World};
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
@@ -118,6 +118,14 @@ impl RenderWindow {
         const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
         let mut accumulator = 0.0; // "Zeit-Speicher"
 
+        //adding so the circle_collider is stays in the center while resizing
+        let mut world = World::new();
+
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
+            radius: 250.0,
+        });
+
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -142,9 +150,16 @@ impl RenderWindow {
                     event: WindowEvent::CursorMoved { position, .. },
                     ..
                 } => {
-                    mouse_pos = Vec2::new(position.x as f32, position.y as f32);
-                    println!("Mouse at: x = {}, y = {}", position.x, position.y);
+                    let half_width = render_window.config.width as f32 / 2.0;
+                    let half_height = render_window.config.height as f32 / 2.0;
+
+                    // Umrechnung: Maus-Pixel minus halbe Fenstergröße
+                    mouse_pos = glam::Vec2::new(
+                        position.x as f32 - half_width,
+                        position.y as f32 - half_height,
+                    );
                 }
+
                 Event::WindowEvent {
                     event: WindowEvent::MouseInput { state, button, .. },
                     ..
