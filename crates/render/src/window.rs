@@ -1,6 +1,6 @@
 use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 use glam::Vec2;
-use pp_physics::{Particle, World};
+use pp_physics::{CircleCollider, Particle, World};
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
@@ -113,6 +113,12 @@ impl RenderWindow {
         // physics world + mausposition
         let mut world = World::new();
         let mut mouse_pos = Vec2::ZERO;
+
+        //collider setup
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::new(WINDOW_WIDTH as f32 / 2.0, WINDOW_HEIGHT as f32 / 2.0),
+            radius: 250.0,
+        });
 
         // runs the event loop
         event_loop.run(move |event, elwt| {
