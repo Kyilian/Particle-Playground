@@ -1,3 +1,4 @@
+use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 use glam::Vec2;
 use pp_physics::{Particle, World};
 use std::sync::Arc; //Arc for dual ownership
@@ -9,13 +10,12 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{WINDOW_HEIGHT, WINDOW_WIDTH};
-
 pub struct RenderWindow {
     surface: Surface<'static>,
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
+    particle_renderer: ParticleRenderer,
 }
 
 // funktion für nearest neighbour search
@@ -37,6 +37,7 @@ fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
 
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+        let mut last_time = std::time::Instant::now();
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
         let window = Arc::new(
@@ -44,6 +45,7 @@ impl RenderWindow {
             WindowBuilder::new()
                 .with_title("Particle Playground")
                 .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
+                .with_resizable(false)
                 .build(&event_loop)?,
         );
 
@@ -58,7 +60,7 @@ impl RenderWindow {
 
         // requests adapter
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
+            power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: Some(&surface),
             force_fallback_adapter: false,
         }))
@@ -96,12 +98,16 @@ impl RenderWindow {
         };
         surface.configure(&device, &config);
 
+        //creates particle renderer
+        let particle_renderer = ParticleRenderer::new(&device, &config);
+
         // creates render window state
         let mut render_window = Self {
             surface,
             device,
             queue,
             config,
+            particle_renderer,
         };
 
         // physics world + mausposition
@@ -165,6 +171,18 @@ impl RenderWindow {
                 }
                 Event::AboutToWait => {
                     //renders when all pending events are finished
+
+                    //physic update
+                    let current_time = std::time::Instant::now();
+                    let dt = (current_time - last_time).as_secs_f32();
+                    last_time = current_time;
+                    world.step(dt);
+
+                    //copy to GPU
+                    render_window
+                        .particle_renderer
+                        .update_particles(&world.particles, &render_window.queue);
+
                     // renders frame
                     match render_window.render() {
                         Ok(_) => {}
@@ -195,6 +213,9 @@ impl RenderWindow {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
+
+            //new renderer incase window gets resized
+            self.particle_renderer = ParticleRenderer::new(&self.device, &self.config);
         }
     }
 
@@ -214,7 +235,7 @@ impl RenderWindow {
 
         // creates render pass with black clear color to remove artifacts
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
@@ -233,6 +254,10 @@ impl RenderWindow {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+
+            //draw particle
+            self.particle_renderer.render(&mut render_pass);
+
             // render pass ends here automatically when dropped
         }
 

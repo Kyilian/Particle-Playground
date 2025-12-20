@@ -1,5 +1,7 @@
+mod particle_renderer;
 mod window;
 
+pub use particle_renderer::ParticleRenderer;
 pub use wgpu;
 pub use window::RenderWindow;
 
