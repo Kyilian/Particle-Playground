@@ -120,6 +120,8 @@ impl RenderWindow {
             radius: 250.0,
         });
 
+       
+
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -182,7 +184,9 @@ impl RenderWindow {
                     let current_time = std::time::Instant::now();
                     let dt = (current_time - last_time).as_secs_f32();
                     last_time = current_time;
-                    world.step(dt);
+                    let time_scale = 2.0; // 2x schneller, geschwindigkeit einstellen
+                    world.step(dt * time_scale);
+
 
                     //copy to GPU
                     render_window

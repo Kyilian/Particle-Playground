@@ -56,15 +56,22 @@ impl World {
     }
 
     pub fn solve_collisions(&mut self) {
+        let restitution = 0.96;         //sehr bouncy verhalten..0.3 weniger bis garkein bounch
+
         for p in &mut self.particles {
             for c in &self.colliders {
-                let dir = p.pos - c.center;
+                let dir = p.pos - c.center; //testen ob der partikel auserhalb der border ist
                 let dist = dir.length();
 
-                // Wenn Partikel außerhalb des Kreises ist wird nach innen geschoben
                 if dist > c.radius {
-                    let correction = dir.normalize() * c.radius;
-                    p.pos = c.center + correction;
+                    let normal = dir.normalize();
+
+                    p.pos = c.center + normal * c.radius; // Position auf Rand korrigieren -Position Projection
+
+                    let vel = p.pos - p.old_pos; // aufschlags geschwindigkeit brechenet
+                    let reflected = vel - 2.0 * vel.dot(normal) * normal; //abprallen mit korrekt reflektierter Richtung
+                    let reflected = reflected * restitution; //  Energieverlust einberechen
+                    p.old_pos = p.pos - reflected; // Verlet- trick, partikel weiß er ist abgeprallt
                 }
             }
         }
@@ -95,8 +102,7 @@ mod test {
         let mut world = World::new();
         let id = world.add_particle(Particle::new(Vec2::ZERO));
 
-        world.apply_forces();
-        world.update_positions(1.0);
+        world.step(1.0);
         let p = world.particles[id];
         let expected = Vec2::new(0.0, 9.81);
 
@@ -127,5 +133,55 @@ mod test {
         assert_eq!(world.particles.len(), 0, "Partikel sollten weg sein");
         assert_eq!(world.colliders.len(), 0, "Collider sollten weg sein");
         assert_eq!(world.gravity.y, 9.81, "Gravity sollte wieder Standard sein");
+    }
+    #[test]
+    fn particle_stays_inside_circle() {
+        let mut world = World::new();
+
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::ZERO,
+            radius: 10.0,
+        });
+
+        let id = world.add_particle(Particle::new(Vec2::new(20.0, 0.0)));
+
+        world.solve_collisions();
+
+        let p = world.particles[id];
+        assert!(
+            p.pos.length() <= 10.0 + 1e-4,
+            "Particle escaped the boundary"
+        );
+    }
+    #[test]
+    fn particle_bounces_off_circle() {
+        let mut world = World::new();
+
+        let collider = CircleCollider {
+            center: Vec2::ZERO,
+            radius: 10.0,
+        };
+        world.add_circle_collider(collider);
+
+        // Partikel außerhalb, kam von innen → echte Kollision
+        let mut p = Particle::new(Vec2::new(12.0, 0.0));
+        p.old_pos = Vec2::new(9.0, 0.0);
+
+        let id = world.add_particle(p);
+
+        world.solve_collisions();
+
+        let p = &world.particles[id];
+
+        let vel = p.pos - p.old_pos;
+        let normal = (p.pos - collider.center).normalize();
+
+        // Nach der Kollision darf das Partikel nicht weiter nach außen laufen
+        assert!(
+            vel.dot(normal) <= 0.0,
+            "Particle velocity still points outward: vel={:?}, normal={:?}",
+            vel,
+            normal
+        );
     }
 }
