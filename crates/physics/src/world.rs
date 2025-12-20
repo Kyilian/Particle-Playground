@@ -56,7 +56,7 @@ impl World {
     }
 
     pub fn solve_collisions(&mut self) {
-        let restitution = 0.96;         //sehr bouncy verhalten..0.3 weniger bis garkein bounch
+        let restitution = 0.96; //sehr bouncy verhalten..0.3 weniger bis garkein bounch
 
         for p in &mut self.particles {
             for c in &self.colliders {
