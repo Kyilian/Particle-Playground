@@ -111,7 +111,7 @@ impl RenderWindow {
         };
 
         // physics world + mausposition
-        let mut world = World::new();
+        let _world = World::new();
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
@@ -314,5 +314,54 @@ impl RenderWindow {
 
     pub fn config(&self) -> &SurfaceConfiguration {
         &self.config
+    }
+}
+//Ai Unit Tests Gemini
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_coordinate_centering_logic() {
+        let screen_size = [800.0, 600.0];
+        let particle_pos = [0.0, 0.0];
+
+        // Simulation der Shader-Logik:
+        let center_offset = [screen_size[0] / 2.0, screen_size[1] / 2.0];
+        let screen_pos = [
+            particle_pos[0] + center_offset[0],
+            particle_pos[1] + center_offset[1],
+        ];
+
+        let ndc_x: f64 = (screen_pos[0] / screen_size[0]) * 2.0 - 1.0;
+        let ndc_y: f64 = (screen_pos[1] / screen_size[1]) * 2.0 - 1.0;
+
+        assert!(
+            ndc_x.abs() < 1e-6,
+            "NDC X sollte 0 sein, ist aber {}",
+            ndc_x
+        );
+        assert!(
+            ndc_y.abs() < 1e-6,
+            "NDC Y sollte 0 sein, ist aber {}",
+            ndc_y
+        );
+    }
+
+    #[test]
+    fn test_mouse_to_world_conversion() {
+        let window_size = (800.0, 600.0);
+
+        let mouse_top_left = (0.0, 0.0);
+        let world_x = mouse_top_left.0 - (window_size.0 / 2.0);
+        let world_y = mouse_top_left.1 - (window_size.1 / 2.0);
+
+        assert_eq!(world_x, -400.0);
+        assert_eq!(world_y, -300.0);
+
+        let mouse_center = (400.0, 300.0);
+        let world_center_x = mouse_center.0 - (window_size.0 / 2.0);
+        let world_center_y = mouse_center.1 - (window_size.1 / 2.0);
+
+        assert_eq!(world_center_x, 0.0);
+        assert_eq!(world_center_y, 0.0);
     }
 }

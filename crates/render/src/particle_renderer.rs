@@ -68,7 +68,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct GlobalUniforms {
+pub struct GlobalUniforms {
     screen_size: [f32; 2],
     _padding: [f32; 2], // Wichtig für 16-Byte Alignment
 }
@@ -307,5 +307,20 @@ impl ParticleRenderer {
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.draw(0..6, 0..self.instance_count); //mind. 6 vertices
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_uniform_alignment() {
+        assert_eq!(
+            std::mem::size_of::<GlobalUniforms>(),
+            16,
+            "GlobalUniforms muss exakt 16 Bytes groß sein (Alignment-Check)"
+        );
+        assert_eq!(std::mem::align_of::<GlobalUniforms>(), 4);
     }
 }
