@@ -77,10 +77,10 @@ pub struct ParticleRenderer {
     render_pipeline: wgpu::RenderPipeline, // GPU Pipeline für Rendering
     vertex_buffer: wgpu::Buffer,           // Quad Geometrie
     instance_buffer: wgpu::Buffer,         // Partikel-positionen
-    uniform_buffer: wgpu::Buffer,           //Add Uniform Buffer for resizing
-    uniform_bind_group: wgpu::BindGroup,   
-    instance_count: u32,                   // Partikelanzahl
-    max_particles: u32,                    // kann später für Buffer Kapazität benutzt werden
+    uniform_buffer: wgpu::Buffer,          //Add Uniform Buffer for resizing
+    uniform_bind_group: wgpu::BindGroup,
+    instance_count: u32, // Partikelanzahl
+    max_particles: u32,  // kann später für Buffer Kapazität benutzt werden
 }
 
 // repräsentation eines Partikels in GPU
@@ -163,19 +163,20 @@ impl ParticleRenderer {
         });
 
         // Bind Group Layout erstellen
-        let uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-            label: Some("Uniform Bind Group Layout"),
-        });
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("Uniform Bind Group Layout"),
+            });
 
         // Bind Group erstellen
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -188,11 +189,12 @@ impl ParticleRenderer {
         });
 
         // Pipeline Layout erstellen
-        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Particle Pipeline Layout"),
-            bind_group_layouts: &[&uniform_bind_group_layout],
-            push_constant_ranges: &[],
-        });
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Particle Pipeline Layout"),
+                bind_group_layouts: &[&uniform_bind_group_layout],
+                push_constant_ranges: &[],
+            });
 
         // Shader Modul wird erstellt
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -255,7 +257,7 @@ impl ParticleRenderer {
             render_pipeline,
             vertex_buffer,
             instance_buffer,
-            
+
             uniform_buffer,
             uniform_bind_group,
             instance_count: 0,
@@ -264,12 +266,12 @@ impl ParticleRenderer {
     }
 
     pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
-    let uniforms = GlobalUniforms {
-        screen_size: [width as f32, height as f32],
-        _padding: [0.0, 0.0],
-    };
-    queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
-}
+        let uniforms = GlobalUniforms {
+            screen_size: [width as f32, height as f32],
+            _padding: [0.0, 0.0],
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
 
     // Aktualisiert die Partikel-Positionen auf der GPU
     pub fn update_particles(&mut self, particles: &[Particle], queue: &Queue) {

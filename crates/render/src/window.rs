@@ -114,6 +114,10 @@ impl RenderWindow {
         let mut world = World::new();
         let mut mouse_pos = Vec2::ZERO;
 
+        //Adding a const time step so the pixels dont excelerate when the window is resized
+        const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
+        let mut accumulator = 0.0; // "Zeit-Speicher"
+
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -174,9 +178,19 @@ impl RenderWindow {
 
                     //physic update
                     let current_time = std::time::Instant::now();
-                    let dt = (current_time - last_time).as_secs_f32();
+                    let mut frame_time = (current_time - last_time).as_secs_f32();
+
+                    if frame_time > 0.25 {
+                        frame_time = 0.25;
+                    }
+
                     last_time = current_time;
-                    world.step(dt);
+
+                    accumulator += frame_time;
+                    while accumulator >= TIME_STEP {
+                        world.step(TIME_STEP); // gets 1/120
+                        accumulator -= TIME_STEP;
+                    }
 
                     //copy to GPU
                     render_window
@@ -209,13 +223,19 @@ impl RenderWindow {
     }
 
     fn resize(&mut self, new_width: u32, new_height: u32) {
-        if new_width > 0 && new_height > 0 {
+        if new_width > 0
+            && new_height > 0
+            && (new_width != self.config.width || new_height != self.config.height)
+        {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
 
             //new renderer incase window gets resized
-            self.particle_renderer = ParticleRenderer::new(&self.device, &self.config);
+            //changed it to the Uniform buffer
+            self.particle_renderer
+                .update_window_size(&self.queue, new_width, new_height);
+            println!("Resized to: {}x{}", new_width, new_height);
         }
     }
 
