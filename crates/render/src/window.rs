@@ -45,7 +45,7 @@ impl RenderWindow {
             WindowBuilder::new()
                 .with_title("Particle Playground")
                 .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
-                .with_resizable(false)
+                .with_resizable(true)
                 .build(&event_loop)?,
         );
 
@@ -111,12 +111,18 @@ impl RenderWindow {
         };
 
         // physics world + mausposition
-        let mut world = World::new();
+        let _world = World::new();
         let mut mouse_pos = Vec2::ZERO;
 
-        //collider setup
+        //Adding a const time step so the pixels dont excelerate when the window is resized
+        const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
+        let mut accumulator = 0.0; // "Zeit-Speicher"
+
+        //adding so the circle_collider is stays in the center while resizing
+        let mut world = World::new();
+
         world.add_circle_collider(CircleCollider {
-            center: Vec2::new(WINDOW_WIDTH as f32 / 2.0, WINDOW_HEIGHT as f32 / 2.0),
+            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
             radius: 250.0,
         });
 
@@ -144,9 +150,16 @@ impl RenderWindow {
                     event: WindowEvent::CursorMoved { position, .. },
                     ..
                 } => {
-                    mouse_pos = Vec2::new(position.x as f32, position.y as f32);
-                    println!("Mouse at: x = {}, y = {}", position.x, position.y);
+                    let half_width = render_window.config.width as f32 / 2.0;
+                    let half_height = render_window.config.height as f32 / 2.0;
+
+                    // Umrechnung: Maus-Pixel minus halbe Fenstergröße
+                    mouse_pos = glam::Vec2::new(
+                        position.x as f32 - half_width,
+                        position.y as f32 - half_height,
+                    );
                 }
+
                 Event::WindowEvent {
                     event: WindowEvent::MouseInput { state, button, .. },
                     ..
@@ -180,10 +193,19 @@ impl RenderWindow {
 
                     //physic update
                     let current_time = std::time::Instant::now();
-                    let dt = (current_time - last_time).as_secs_f32();
+                    let mut frame_time = (current_time - last_time).as_secs_f32();
+
+                    if frame_time > 0.25 {
+                        frame_time = 0.25;
+                    }
+
                     last_time = current_time;
-                    let time_scale = 2.0; // 2x schneller, geschwindigkeit einstellen
-                    world.step(dt * time_scale);
+
+                    accumulator += frame_time;
+                    while accumulator >= TIME_STEP {
+                        world.step(TIME_STEP); // gets 1/120
+                        accumulator -= TIME_STEP;
+                    }
 
                     //copy to GPU
                     render_window
@@ -216,13 +238,19 @@ impl RenderWindow {
     }
 
     fn resize(&mut self, new_width: u32, new_height: u32) {
-        if new_width > 0 && new_height > 0 {
+        if new_width > 0
+            && new_height > 0
+            && (new_width != self.config.width || new_height != self.config.height)
+        {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
 
             //new renderer incase window gets resized
-            self.particle_renderer = ParticleRenderer::new(&self.device, &self.config);
+            //changed it to the Uniform buffer
+            self.particle_renderer
+                .update_window_size(&self.queue, new_width, new_height);
+            println!("Resized to: {}x{}", new_width, new_height);
         }
     }
 
@@ -286,5 +314,54 @@ impl RenderWindow {
 
     pub fn config(&self) -> &SurfaceConfiguration {
         &self.config
+    }
+}
+//Ai Unit Tests Gemini
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_coordinate_centering_logic() {
+        let screen_size = [800.0, 600.0];
+        let particle_pos = [0.0, 0.0];
+
+        // Simulation der Shader-Logik:
+        let center_offset = [screen_size[0] / 2.0, screen_size[1] / 2.0];
+        let screen_pos = [
+            particle_pos[0] + center_offset[0],
+            particle_pos[1] + center_offset[1],
+        ];
+
+        let ndc_x: f64 = (screen_pos[0] / screen_size[0]) * 2.0 - 1.0;
+        let ndc_y: f64 = (screen_pos[1] / screen_size[1]) * 2.0 - 1.0;
+
+        assert!(
+            ndc_x.abs() < 1e-6,
+            "NDC X sollte 0 sein, ist aber {}",
+            ndc_x
+        );
+        assert!(
+            ndc_y.abs() < 1e-6,
+            "NDC Y sollte 0 sein, ist aber {}",
+            ndc_y
+        );
+    }
+
+    #[test]
+    fn test_mouse_to_world_conversion() {
+        let window_size = (800.0, 600.0);
+
+        let mouse_top_left = (0.0, 0.0);
+        let world_x = mouse_top_left.0 - (window_size.0 / 2.0);
+        let world_y = mouse_top_left.1 - (window_size.1 / 2.0);
+
+        assert_eq!(world_x, -400.0);
+        assert_eq!(world_y, -300.0);
+
+        let mouse_center = (400.0, 300.0);
+        let world_center_x = mouse_center.0 - (window_size.0 / 2.0);
+        let world_center_y = mouse_center.1 - (window_size.1 / 2.0);
+
+        assert_eq!(world_center_x, 0.0);
+        assert_eq!(world_center_y, 0.0);
     }
 }
