@@ -76,11 +76,60 @@ impl World {
             }
         }
     }
+
+    pub fn solve_particle_collisions(&mut self) {
+        let restitution = 0.96;
+        let radius = 6.0;
+        let min_dist = 2.0 * radius;
+
+        let n = self.particles.len();
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let (left, right) = self.particles.split_at_mut(j);
+                let a = &mut left[i];
+                let b = &mut right[0];
+
+                let dir = b.pos - a.pos;
+                let dist = dir.length();
+
+                // overlap
+                if dist < min_dist {
+                    let normal = dir / dist; // einheitsvektor von a nach b (normale)
+                    let overlap = min_dist - dist;
+
+                    let correction = normal * (overlap * 0.5);
+                    a.pos -= correction;
+                    b.pos += correction;
+
+                    // vel = pos - old_pos
+                    let vel_a = a.pos - a.old_pos;
+                    let vel_b = b.pos - b.old_pos;
+
+                    let rel_vel = vel_b - vel_a;
+                    let rel_normal_speed = rel_vel.dot(normal); // geschwindigkeit auf der kollisionsnormalen
+
+                    // kleiner 0 bedeutet sie bewegen sich aufeinander zu -> bounce
+                    if rel_normal_speed < 0.0 {
+                        let bounce = -(1.0 + restitution) * rel_normal_speed * 0.5;
+                        let bounce_vec = normal * bounce;
+
+                        let vel_a2 = vel_a - bounce_vec;
+                        let vel_b2 = vel_b + bounce_vec;
+
+                        a.old_pos = a.pos - vel_a2;
+                        b.old_pos = b.pos - vel_b2;
+                    }
+                }
+            }
+        }
+    }
+
     //ein "Simulationsschritt“ (forces → integration → collisions)
     pub fn step(&mut self, dt: f32) {
         self.apply_forces();
         self.update_positions(dt);
         self.solve_collisions();
+        self.solve_particle_collisions();
     }
 
     //resets all particles
