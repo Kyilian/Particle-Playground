@@ -94,7 +94,7 @@ impl World {
 
                 // overlap
                 if dist < min_dist {
-                    let normal = dir / dist; // einheitsvektor von a nach b:
+                    let normal = dir / dist; // einheitsvektor von a nach b (normale)
                     let overlap = min_dist - dist;
 
                     let correction = normal * (overlap * 0.5);
