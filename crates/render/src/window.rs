@@ -38,6 +38,12 @@ fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
+
+        //creates fps calculation variables
+        let mut fps_acc_time: f32 = 0.0;
+        let mut fps_frames: u32 = 0;
+        let mut fps: f32 = 0.0;
+
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
         let window = Arc::new(
@@ -199,6 +205,18 @@ impl RenderWindow {
                         frame_time = 0.25;
                     }
 
+                    //fps calculation
+
+                    fps_acc_time += frame_time; //addiert zeiten auf die ein frame gebraucht hat
+                    fps_frames += 1;
+
+                    if fps_acc_time >= 0.5 {
+                        fps = fps_frames as f32 / fps_acc_time;
+                        println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
+                        fps_acc_time = 0.0;
+                        fps_frames = 0;
+                    }
+
                     last_time = current_time;
 
                     accumulator += frame_time;
@@ -316,6 +334,7 @@ impl RenderWindow {
         &self.config
     }
 }
+
 //Ai Unit Tests Gemini
 #[cfg(test)]
 mod tests {
