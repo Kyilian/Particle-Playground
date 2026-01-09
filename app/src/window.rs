@@ -27,23 +27,6 @@ pub struct RenderWindow {
     pub is_minimized: bool,
 }
 
-// funktion für nearest neighbour search
-fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
-    let mut nearest: Option<usize> = None;
-    let mut nearest_dist2 = f32::MAX;
-
-    for (i, p) in world.particles.iter().enumerate() {
-        let d = p.pos - mouse_pos;
-        let dist2 = d.length_squared();
-
-        if dist2 < nearest_dist2 {
-            nearest_dist2 = dist2;
-            nearest = Some(i);
-        }
-    }
-    nearest
-}
-
 impl RenderWindow {
     pub fn run(initial_scene: Box<dyn Scene>) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
@@ -177,24 +160,43 @@ impl RenderWindow {
                     event: WindowEvent::MouseInput { state, button, .. },
                     ..
                 } => {
+                    if state == ElementState::Pressed && button == MouseButton::Middle {
+                        let is_right = false;
+                        let is_left = false;
+                        let is_middle = true;
+                        render_window.current_scene.on_click(
+                            &mut render_window.world,
+                            mouse_pos,
+                            is_right,
+                            is_left,
+                            is_middle,
+                        );
+                    }
+
                     if state == ElementState::Pressed && button == MouseButton::Left {
                         // Linksklick: Partikel spawnen
-                        let id = render_window.world.add_particle(Particle::new(mouse_pos));
-                        println!("Spawned particle #{id} at {:?}", mouse_pos);
+                        let is_right = false;
+                        let is_left = true;
+                        let is_middle = false;
+                        render_window.current_scene.on_click(
+                            &mut render_window.world,
+                            mouse_pos,
+                            is_right,
+                            is_left,
+                            is_middle,
+                        );
                     }
                     if state == ElementState::Pressed && button == MouseButton::Right {
-                        // Rechtsklick: nächsten Partikel finden
-                        if let Some(nearest) =
-                            find_nearest_particle(&render_window.world, mouse_pos)
-                        {
-                            let p = &render_window.world.particles[nearest];
-                            println!(
-                                "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
-                                p.pos, mouse_pos
-                            );
-                        } else {
-                            println!("No particle close to {:?}", mouse_pos);
-                        }
+                        let is_right = true;
+                        let is_left = false;
+                        let is_middle = false;
+                        render_window.current_scene.on_click(
+                            &mut render_window.world,
+                            mouse_pos,
+                            is_right,
+                            is_left,
+                            is_middle,
+                        );
                     }
                 }
                 Event::WindowEvent {

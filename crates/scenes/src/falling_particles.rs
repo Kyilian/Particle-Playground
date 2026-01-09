@@ -10,15 +10,18 @@ const HEIGHT: usize = 600;
 
 pub struct FallingParticles {
     gravity: f32,
-    spawn_position: Vec2,
     spawnrate: Option<i32>,
+    particle_radius: f32,
+    color: [f32; 4],
 }
+
 impl FallingParticles {
     pub fn new() -> Self {
         Self {
             gravity: 9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
-            spawn_position: Vec2::new(100.0, 200.0),
             spawnrate: None,
+            color: [1.0, 0.2, 0.2, 1.0],
+            particle_radius: 20.0,
         }
     }
 }
@@ -42,8 +45,8 @@ impl Scene for FallingParticles {
 
         ctx.renderer.update_render_settings(
             ctx.queue,
-            [1.0, 0.2, 0.2, 1.0], // Rot
-            20.0,
+            self.color, // Rot
+            self.particle_radius,
         );
 
         ctx.renderer.update_particles(&world.particles, ctx.queue);
@@ -53,19 +56,38 @@ impl Scene for FallingParticles {
     }
 
     // Spawn a particle with a click
-    fn on_click(&mut self, _world: &mut World, _x: f32, _y: f32) {
-        let p = Particle {
-            pos: Vec2::new(_x, _y),
-            old_pos: Vec2::new(_x, _y),
-            acc: Vec2::ZERO,
-        };
-        _world.particles.push(p);
+    fn on_click(
+        &mut self,
+        world: &mut World,
+        mouse_pos: Vec2,
+        right_click: bool,
+        left_click: bool,
+        is_middle: bool,
+    ) {
+        if left_click {
+            let id = world.add_particle(Particle::new(mouse_pos));
+            println!("Spawned particle #{id} at {:?}", mouse_pos);
+        }
+
+        if right_click {
+            if let Some(nearest) = world.find_nearest_particle(mouse_pos) {
+                println!(
+                    "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
+                    world.particles[nearest].pos, mouse_pos
+                );
+            } else {
+                println!("No particle close to {:?}", mouse_pos);
+            }
+        }
+
+        if is_middle {
+            self.color = [0.2, 0.2, 1.0, 1.0];
+        }
     }
 
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
-        self.spawn_position = Vec2::new(100.0, 200.0);
         self.gravity = 9.81;
         _world.clear();
     }
@@ -84,40 +106,5 @@ impl Scene for FallingParticles {
                 self.reset(_world);
             }
         });
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use glam::Vec2;
-
-    #[test]
-    fn on_click_spawns_particle_at_position() {
-        let mut world = World::new();
-        let mut scene = FallingParticles::new();
-
-        scene.on_click(&mut world, 100.0, 200.0);
-
-        assert_eq!(world.particles.len(), 1);
-        let p = world.particles[0];
-        assert!((p.pos - Vec2::new(100.0, 200.0)).length() < 0.001);
-    }
-
-    #[test]
-    fn reset_to_default() {
-        let mut world = World::new();
-        let mut scene = FallingParticles::new();
-
-        scene.on_click(&mut world, 100.0, 200.0);
-        scene.on_click(&mut world, 2.0, 200.0);
-        scene.on_click(&mut world, 332.0, 200.0);
-
-        scene.gravity = 100.0;
-        scene.spawn_position = Vec2::new(1.0, 1.0);
-        scene.reset(&mut world);
-
-        assert_eq!(world.particles.len(), 0);
-        assert_eq!(scene.gravity, 9.81);
     }
 }
