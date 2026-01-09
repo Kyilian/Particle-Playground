@@ -282,7 +282,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
             color: color,
-            particle_size_wrapper: [particle_radius, 0.0, 0.0, 0.0],// these zeros are placeholders because I had problems if i did not used 16 byte blocks
+            particle_size_wrapper: [particle_radius, 0.0, 0.0, 0.0], // these zeros are placeholders because I had problems if i did not used 16 byte blocks
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -296,7 +296,7 @@ impl ParticleRenderer {
     //    };
     //    queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     //}
-    
+
     pub fn update_window_size(&mut self, _queue: &Queue, width: u32, height: u32) {
         self.size = (width, height);
         //queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));

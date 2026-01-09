@@ -23,6 +23,8 @@ pub struct RenderWindow {
 
     current_scene: Box<dyn Scene>,
     world: World,
+
+    pub is_minimized: bool,
 }
 
 // funktion für nearest neighbour search
@@ -124,6 +126,8 @@ impl RenderWindow {
             particle_renderer,
             current_scene: initial_scene,
             world,
+
+            is_minimized: false,
         };
 
         // physics world + mausposition
@@ -249,6 +253,12 @@ impl RenderWindow {
     }
 
     fn resize(&mut self, new_width: u32, new_height: u32) {
+        if new_height == 0 || new_width == 0 {
+            self.is_minimized = true;
+            return;
+        }
+        self.is_minimized = false;
+
         if new_width > 0
             && new_height > 0
             && (new_width != self.config.width || new_height != self.config.height)
@@ -266,6 +276,11 @@ impl RenderWindow {
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+        //render error if size of the window is zero otherwise
+        if self.is_minimized {
+            return Ok(());
+        }
+
         // gets the current frame
         let output = self.surface.get_current_texture()?;
         let view = output
