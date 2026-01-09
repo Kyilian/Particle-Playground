@@ -8,7 +8,9 @@ const SHADER_SOURCE: &str = r#"
 // Vertex Shader Output / Fragment Shader Input
 
 struct Globals {
-    screen_size: vec2<f32>,
+    screen_size_wrapper: vec4<f32>,   // .xy = width, height
+    color: vec4<f32>,                 // .rgba = color
+    particle_size_wrapper: vec4<f32>, // .x = size
 };
 
 // Wir binden den Buffer an Gruppe 0, Binding 0
@@ -27,21 +29,21 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput; 
 
-    // konstanten für die Partikel Darstelliung
-    let particle_size: f32 = 12.0;      //      ----------!!als Parameter setzen später!!----------
+    let screen_size = globals.screen_size_wrapper.xy; 
+    let particle_size = globals.particle_size_wrapper.x;
 
     // quad von -0.5 bis +0.5 auf pixel-größe skalieren
     let scaled_pos = vertex_pos * particle_size;
 
     //hinzugefügt um den Center in die Mitte zu verschieben für Circle_collider
-    let center_offset = globals.screen_size / 2.0;
+    let center_offset = screen_size / 2.0;
 
     // partikel position im screen-space verschieben
     let screen_pos = scaled_pos + instance_pos + center_offset;
 
     // zu Pixel koordinaten konvertieren (normalized device coordinates)
-    let ndc_x = (screen_pos.x / globals.screen_size.x) * 2.0 - 1.0;
-    let ndc_y = -((screen_pos.y / globals.screen_size.y) * 2.0 - 1.0);
+    let ndc_x = (screen_pos.x / screen_size.x) * 2.0 - 1.0;
+    let ndc_y = -((screen_pos.y / screen_size.y) * 2.0 - 1.0);
 
     out.clip_position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
 
@@ -60,17 +62,17 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         discard;    // wenn Pixel außerhalb des Kreises wird er nicht gerendert
     }
 
-    // Pixel im Kreis werden weiß gezeichnet (RGBA)
-    return vec4<f32>(1.0, 1.0, 1.0, 1.0); //Pixel im Kreis werden weiß gezeichnet
+    // Color of the pixels is determined in the scene 
+    return globals.color;
 }
-
 "#;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlobalUniforms {
-    screen_size: [f32; 2],
-    _padding: [f32; 2], // Wichtig für 16-Byte Alignment
+    pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
+    pub color: [f32; 4],
+    pub particle_size_wrapper: [f32; 4],
 }
 
 // Renderer für Partikel als Kreise mit GPU-Instancing
@@ -84,6 +86,8 @@ pub struct ParticleRenderer {
     uniform_bind_group: wgpu::BindGroup,
     instance_count: u32, // Partikelanzahl
     max_particles: u32,  // kann später für Buffer Kapazität benutzt werden
+
+    pub size: (u32, u32), //For resizing
 }
 
 // repräsentation eines Partikels in GPU
@@ -156,8 +160,9 @@ impl ParticleRenderer {
     pub fn new(device: &Device, config: &SurfaceConfiguration) -> Self {
         //  Creating Uniform Buffer
         let uniforms = GlobalUniforms {
-            screen_size: [config.width as f32, config.height as f32],
-            _padding: [0.0, 0.0],
+            screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            particle_size_wrapper: [12.0, 0.0, 0.0, 0.0],
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -170,7 +175,7 @@ impl ParticleRenderer {
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
@@ -265,15 +270,36 @@ impl ParticleRenderer {
             uniform_bind_group,
             instance_count: 0,
             max_particles,
+            size: (config.width, config.height),
         }
     }
 
-    pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
+    //To call the scene
+    pub fn update_render_settings(&self, queue: &Queue, color: [f32; 4], particle_radius: f32) {
+        let width = self.size.0 as f32;
+        let height = self.size.1 as f32;
+
         let uniforms = GlobalUniforms {
-            screen_size: [width as f32, height as f32],
-            _padding: [0.0, 0.0],
+            screen_size_wrapper: [width, height, 0.0, 0.0],
+            color: color,
+            particle_size_wrapper: [particle_radius, 0.0, 0.0, 0.0],// these zeros are placeholders because I had problems if i did not used 16 byte blocks
         };
+
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    }
+    // if the changes of the renderer and scene works as I intended, we wouldnt need this function anymore
+
+    //pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
+    //    let uniforms = GlobalUniforms {
+    //        screen_size: [width as f32, height as f32],
+    //        _padding: [0.0, 0.0],
+    //    };
+    //    queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
+    //}
+    
+    pub fn update_window_size(&mut self, _queue: &Queue, width: u32, height: u32) {
+        self.size = (width, height);
+        //queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 
     // Aktualisiert die Partikel-Positionen auf der GPU
@@ -296,7 +322,7 @@ impl ParticleRenderer {
     }
 
     // Rendert alle Partikel in einem Draw-Call
-    pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass<'_>) {
         if self.instance_count == 0 {
             return; // macht nichts wenn keine Artikel vorhanden
         }
@@ -318,9 +344,8 @@ mod tests {
     fn test_uniform_alignment() {
         assert_eq!(
             std::mem::size_of::<GlobalUniforms>(),
-            16,
-            "GlobalUniforms muss exakt 16 Bytes groß sein (Alignment-Check)"
+            48,
+            "GlobalUniforms muss exakt 48 Bytes groß sein"
         );
-        assert_eq!(std::mem::align_of::<GlobalUniforms>(), 4);
     }
 }

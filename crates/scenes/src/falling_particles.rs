@@ -1,6 +1,7 @@
 use super::Scene;
 use glam::Vec2;
 use pp_physics::{Particle, World};
+use pp_render::{ParticleRenderer, RenderContext};
 
 //Using constant placeholders for window size
 //Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
@@ -36,30 +37,19 @@ impl Scene for FallingParticles {
     }
 
     //call to the render function
-    fn render(&self, _world: &World, frame: &mut [u8]) {
-        //To set the background to black
-        for pixel in frame.chunks_exact_mut(4) {
-            pixel[0] = 0;
-            pixel[1] = 0;
-            pixel[2] = 0;
-            pixel[3] = 255;
-        }
-        //Drawing the pixels to the screen
-        for p in &_world.particles {
-            let x = p.pos.x as isize;
-            let y = (HEIGHT as f32 - p.pos.y) as isize; //Turn Y
+    fn render(&self, world: &World, ctx: &mut RenderContext) {
+        //let width = ctx.renderer.config.width as f32;
 
-            if x >= 0 && x < WIDTH as isize && y >= 0 && y < HEIGHT as isize {
-                let index = (y as usize * WIDTH + x as usize) * 4;
+        ctx.renderer.update_render_settings(
+            ctx.queue,
+            [1.0, 0.2, 0.2, 1.0], // Rot
+            20.0,
+        );
 
-                if index < frame.len() - 4 {
-                    frame[index] = 255;
-                    frame[index + 1] = 255;
-                    frame[index + 2] = 255;
-                    frame[index + 3] = 255;
-                }
-            }
-        }
+        ctx.renderer.update_particles(&world.particles, ctx.queue);
+
+        //draw the particles
+        ctx.renderer.render(ctx.pass);
     }
 
     // Spawn a particle with a click

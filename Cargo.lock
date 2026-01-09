@@ -1046,7 +1046,9 @@ name = "particle-playground-app"
 version = "0.1.0"
 dependencies = [
  "env_logger",
+ "glam",
  "log",
+ "pollster",
  "pp_common",
  "pp_gui",
  "pp_input",
@@ -1169,6 +1171,7 @@ dependencies = [
  "pp_common",
  "pp_physics",
  "pp_render",
+ "wgpu",
 ]
 
 [[package]]

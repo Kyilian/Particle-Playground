@@ -1,6 +1,7 @@
-use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
 use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, World};
+use pp_render::{ParticleRenderer, RenderContext};
+use pp_scenes::Scene;
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
@@ -10,12 +11,18 @@ use winit::{
     window::WindowBuilder,
 };
 
+const WINDOW_WIDTH: u32 = 800;
+const WINDOW_HEIGHT: u32 = 600;
+
 pub struct RenderWindow {
     surface: Surface<'static>,
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
     particle_renderer: ParticleRenderer,
+
+    current_scene: Box<dyn Scene>,
+    world: World,
 }
 
 // funktion für nearest neighbour search
@@ -36,7 +43,7 @@ fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
 }
 
 impl RenderWindow {
-    pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run(initial_scene: Box<dyn Scene>) -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
@@ -101,6 +108,13 @@ impl RenderWindow {
         //creates particle renderer
         let particle_renderer = ParticleRenderer::new(&device, &config);
 
+        let mut world = World::new();
+
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
+            radius: 250.0,
+        });
+
         // creates render window state
         let mut render_window = Self {
             surface,
@@ -108,10 +122,11 @@ impl RenderWindow {
             queue,
             config,
             particle_renderer,
+            current_scene: initial_scene,
+            world,
         };
 
         // physics world + mausposition
-        let _world = World::new();
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
@@ -119,12 +134,6 @@ impl RenderWindow {
         let mut accumulator = 0.0; // "Zeit-Speicher"
 
         //adding so the circle_collider is stays in the center while resizing
-        let mut world = World::new();
-
-        world.add_circle_collider(CircleCollider {
-            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
-            radius: 250.0,
-        });
 
         // runs the event loop
         event_loop.run(move |event, elwt| {
@@ -166,13 +175,15 @@ impl RenderWindow {
                 } => {
                     if state == ElementState::Pressed && button == MouseButton::Left {
                         // Linksklick: Partikel spawnen
-                        let id = world.add_particle(Particle::new(mouse_pos));
+                        let id = render_window.world.add_particle(Particle::new(mouse_pos));
                         println!("Spawned particle #{id} at {:?}", mouse_pos);
                     }
                     if state == ElementState::Pressed && button == MouseButton::Right {
                         // Rechtsklick: nächsten Partikel finden
-                        if let Some(nearest) = find_nearest_particle(&world, mouse_pos) {
-                            let p = &world.particles[nearest];
+                        if let Some(nearest) =
+                            find_nearest_particle(&render_window.world, mouse_pos)
+                        {
+                            let p = &render_window.world.particles[nearest];
                             println!(
                                 "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
                                 p.pos, mouse_pos
@@ -203,14 +214,14 @@ impl RenderWindow {
 
                     accumulator += frame_time;
                     while accumulator >= TIME_STEP {
-                        world.step(TIME_STEP); // gets 1/120
+                        render_window.world.step(TIME_STEP); // gets 1/120
                         accumulator -= TIME_STEP;
                     }
 
                     //copy to GPU
                     render_window
                         .particle_renderer
-                        .update_particles(&world.particles, &render_window.queue);
+                        .update_particles(&render_window.world.particles, &render_window.queue);
 
                     // renders frame
                     match render_window.render() {
@@ -260,46 +271,44 @@ impl RenderWindow {
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-
-        // creates command encoder
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-
         // creates render pass with black clear color to remove artifacts
         {
+            //changed the render pass that we can define the color in the scene itself
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
+                label: Some("Main Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
+                            r: 0.1,
+                            g: 0.1,
+                            b: 0.1,
                             a: 1.0,
                         }),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
+                ..Default::default()
             });
 
-            //draw particle
-            self.particle_renderer.render(&mut render_pass);
+            let mut ctx = RenderContext {
+                renderer: &mut self.particle_renderer,
+                queue: &self.queue,
+                pass: &mut render_pass,
+                device: &self.device,
+            };
 
-            // render pass ends here automatically when dropped
+            self.current_scene.render(&self.world, &mut ctx);
         }
 
-        // submit commands
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-
         Ok(())
     }
 
