@@ -4,14 +4,17 @@ members = ["crates/*","app", "examples/simple_demo"]
 
 [workspace.dependencies]
 #Core und Window handeling
-winit = "0.29" 
-wgpu = "23"
+winit = { version = "0.29.4", default-features = false } #https://github.com/emilk/egui/blob/release-0.28.0/Cargo.toml
+wgpu = { version = "0.20.0", default-features = false, features = [
+    # Make the renderer `Sync` even on wasm32, because it makes the code simpler:
+    "fragile-send-sync-non-atomic-wasm",
+] }
 pollster = "0.3"
 
 #GUI
-egui = "0.27"
-egui-winit = "0.27"
-egui-wgpu = "0.27"
+egui = "0.28.0" 
+egui-winit = "0.28.0" 
+egui-wgpu = "0.28.0" 
 
 #Logging
 log = "0.4"

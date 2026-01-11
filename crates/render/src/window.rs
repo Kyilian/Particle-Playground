@@ -1,4 +1,5 @@
 use crate::{ParticleRenderer, WINDOW_HEIGHT, WINDOW_WIDTH};
+use egui;
 use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, World};
 use std::sync::Arc; //Arc for dual ownership
@@ -16,6 +17,8 @@ pub struct RenderWindow {
     queue: Queue,
     config: SurfaceConfiguration,
     particle_renderer: ParticleRenderer,
+    egui_renderer: egui_wgpu::Renderer,
+    egui_state: egui_winit::State,
 }
 
 // funktion für nearest neighbour search
@@ -38,6 +41,12 @@ fn find_nearest_particle(world: &World, mouse_pos: Vec2) -> Option<usize> {
 impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
+
+        //creates fps calculation variables
+        let mut fps_acc_time: f32 = 0.0;
+        let mut fps_frames: u32 = 0;
+        let mut fps: f32 = 0.0;
+
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
         let window = Arc::new(
@@ -72,7 +81,7 @@ impl RenderWindow {
                 label: None,
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
-                memory_hints: wgpu::MemoryHints::Performance,
+                //memory_hints: wgpu::MemoryHints::Performance,
             },
             None,
         ))?;
@@ -98,6 +107,21 @@ impl RenderWindow {
         };
         surface.configure(&device, &config);
 
+        let egui_ctx = egui::Context::default();
+
+        let egui_state = egui_winit::State::new(
+            egui_ctx.clone(),
+            egui::viewport::ViewportId::ROOT,
+            &window,
+            Some(window.scale_factor() as f32),
+            None,
+        );
+
+        let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1);
+
+        //adding so the circle_collider is stays in the center while resizing
+        let mut world = World::new();
+
         //creates particle renderer
         let particle_renderer = ParticleRenderer::new(&device, &config);
 
@@ -108,6 +132,8 @@ impl RenderWindow {
             queue,
             config,
             particle_renderer,
+            egui_renderer,
+            egui_state,
         };
 
         // physics world + mausposition
@@ -130,64 +156,81 @@ impl RenderWindow {
         event_loop.run(move |event, elwt| {
             match event {
                 Event::WindowEvent {
-                    event: WindowEvent::CloseRequested, //closing the window
+                    event: ref win_event,
                     ..
                 } => {
-                    elwt.exit();
-                }
-                Event::WindowEvent {
-                    event: WindowEvent::KeyboardInput { event, .. }, //closing the window when pressing ESC
-                    ..
-                } => {
-                    if event.state == ElementState::Pressed {
-                        if let Key::Named(NamedKey::Escape) = event.logical_key {
+                    // egui wird über alle events informiert
+                    let response = render_window
+                        .egui_state
+                        .on_window_event(&*window, &win_event);
+
+                    match event {
+                        Event::WindowEvent {
+                            event: WindowEvent::CloseRequested, //closing the window
+                            ..
+                        } => {
                             elwt.exit();
                         }
-                    }
-                }
-                // mausposition ausgeben
-                Event::WindowEvent {
-                    event: WindowEvent::CursorMoved { position, .. },
-                    ..
-                } => {
-                    let half_width = render_window.config.width as f32 / 2.0;
-                    let half_height = render_window.config.height as f32 / 2.0;
-
-                    // Umrechnung: Maus-Pixel minus halbe Fenstergröße
-                    mouse_pos = glam::Vec2::new(
-                        position.x as f32 - half_width,
-                        position.y as f32 - half_height,
-                    );
-                }
-
-                Event::WindowEvent {
-                    event: WindowEvent::MouseInput { state, button, .. },
-                    ..
-                } => {
-                    if state == ElementState::Pressed && button == MouseButton::Left {
-                        // Linksklick: Partikel spawnen
-                        let id = world.add_particle(Particle::new(mouse_pos));
-                        println!("Spawned particle #{id} at {:?}", mouse_pos);
-                    }
-                    if state == ElementState::Pressed && button == MouseButton::Right {
-                        // Rechtsklick: nächsten Partikel finden
-                        if let Some(nearest) = find_nearest_particle(&world, mouse_pos) {
-                            let p = &world.particles[nearest];
-                            println!(
-                                "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
-                                p.pos, mouse_pos
-                            );
-                        } else {
-                            println!("No particle close to {:?}", mouse_pos);
+                        Event::WindowEvent {
+                            event: WindowEvent::KeyboardInput { ref event, .. }, //closing the window when pressing ESC
+                            ..
+                        } => {
+                            if event.state == ElementState::Pressed {
+                                if let Key::Named(NamedKey::Escape) = event.logical_key {
+                                    elwt.exit();
+                                }
+                            }
                         }
+                        // mausposition ausgeben
+                        Event::WindowEvent {
+                            event: WindowEvent::CursorMoved { position, .. },
+                            ..
+                        } => {
+                            let half_width = render_window.config.width as f32 / 2.0;
+                            let half_height = render_window.config.height as f32 / 2.0;
+
+                            // Umrechnung: Maus-Pixel minus halbe Fenstergröße
+                            mouse_pos = glam::Vec2::new(
+                                position.x as f32 - half_width,
+                                position.y as f32 - half_height,
+                            );
+                        }
+
+                        Event::WindowEvent {
+                            event: WindowEvent::MouseInput { state, button, .. },
+                            ..
+                        } => {
+                            // slider ui interaction
+                            if !response.consumed {
+                                if state == ElementState::Pressed && button == MouseButton::Left {
+                                    let id = world.add_particle(Particle::new(mouse_pos));
+                                    println!("Spawned particle #{}", id);
+                                }
+                                if state == ElementState::Pressed && button == MouseButton::Right {
+                                    // Rechtsklick: nächsten Partikel finden
+                                    if let Some(nearest) = find_nearest_particle(&world, mouse_pos)
+                                    {
+                                        let p = &world.particles[nearest];
+                                        println!(
+                                        "Nearest particle is #{nearest} at pos {:?} to mouse {:?}",
+                                        p.pos, mouse_pos
+                                    );
+                                    } else {
+                                        println!("No particle close to {:?}", mouse_pos);
+                                    }
+                                }
+                            }
+                        }
+                        Event::WindowEvent {
+                            event: WindowEvent::Resized(physical_size), //resizing the window
+                            ..
+                        } => {
+                            render_window.resize(physical_size.width, physical_size.height);
+                        }
+                        _ => {}
                     }
                 }
-                Event::WindowEvent {
-                    event: WindowEvent::Resized(physical_size), //resizing the window
-                    ..
-                } => {
-                    render_window.resize(physical_size.width, physical_size.height);
-                }
+
                 Event::AboutToWait => {
                     //renders when all pending events are finished
 
@@ -197,6 +240,17 @@ impl RenderWindow {
 
                     if frame_time > 0.25 {
                         frame_time = 0.25;
+                    }
+                    //fps calculation
+
+                    fps_acc_time += frame_time; //addiert zeiten auf die ein frame gebraucht hat
+                    fps_frames += 1;
+
+                    if fps_acc_time >= 0.5 {
+                        fps = fps_frames as f32 / fps_acc_time;
+                        println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
+                        fps_acc_time = 0.0;
+                        fps_frames = 0;
                     }
 
                     last_time = current_time;
@@ -212,8 +266,31 @@ impl RenderWindow {
                         .particle_renderer
                         .update_particles(&world.particles, &render_window.queue);
 
+                    render_window
+                        .particle_renderer
+                        .update_particle_size(&render_window.queue, world.particle_radius);
+
+                    let raw_input = render_window.egui_state.take_egui_input(&*window);
+                    render_window.egui_state.egui_ctx().begin_frame(raw_input);
+
+                    egui::Window::new("Settings").show(render_window.egui_state.egui_ctx(), |ui| {
+                        ui.add(
+                            egui::Slider::new(&mut world.particle_radius, 1.0..=100.0)
+                                .text("Radius"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut world.restitution, 0.0..=10.0)
+                                .text("Restitution"),
+                        );
+                        ui.add(
+                            egui::Slider::new(&mut world.gravity.y, -100.0..=100.0).text("Gravity"),
+                        );
+                    });
+
+                    let full_output = render_window.egui_state.egui_ctx().end_frame();
+
                     // renders frame
-                    match render_window.render() {
+                    match render_window.render(full_output) {
                         Ok(_) => {}
                         Err(wgpu::SurfaceError::Lost) => {
                             render_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -224,16 +301,13 @@ impl RenderWindow {
                         }
                         Err(e) => eprintln!("Render error: {:?}", e),
                     }
-
                     // requests redraw
                     window.request_redraw();
                 }
                 _ => {}
             }
-
             elwt.set_control_flow(ControlFlow::Poll); //sets loop to run as fast as possible and constantly fire AboutToWait -> renders every frame
         })?;
-
         Ok(())
     }
 
@@ -254,7 +328,7 @@ impl RenderWindow {
         }
     }
 
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, full_output: egui::FullOutput) -> Result<(), wgpu::SurfaceError> {
         // gets the current frame
         let output = self.surface.get_current_texture()?;
         let view = output
@@ -267,6 +341,42 @@ impl RenderWindow {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
+
+        // upload all resources for egui
+        for (id, image_delta) in full_output.textures_delta.set {
+            self.egui_renderer
+                .update_texture(&self.device, &self.queue, id, &image_delta);
+        }
+
+        let paint_jobs = self
+            .egui_state
+            .egui_ctx()
+            .tessellate(full_output.shapes, full_output.pixels_per_point);
+
+        let screen_descriptor = egui_wgpu::ScreenDescriptor {
+            size_in_pixels: [self.config.width, self.config.height],
+            pixels_per_point: full_output.pixels_per_point,
+        };
+
+        self.egui_renderer.update_buffers(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &paint_jobs,
+            &screen_descriptor,
+        );
+
+        self.egui_renderer.update_buffers(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &paint_jobs,
+            &screen_descriptor,
+        );
+
+        for id in full_output.textures_delta.free {
+            self.egui_renderer.free_texture(&id);
+        }
 
         // creates render pass with black clear color to remove artifacts
         {
@@ -293,6 +403,9 @@ impl RenderWindow {
             //draw particle
             self.particle_renderer.render(&mut render_pass);
 
+            self.egui_renderer
+                .render(&mut render_pass, &paint_jobs, &screen_descriptor);
+
             // render pass ends here automatically when dropped
         }
 
@@ -316,6 +429,7 @@ impl RenderWindow {
         &self.config
     }
 }
+
 //Ai Unit Tests Gemini
 #[cfg(test)]
 mod tests {

@@ -9,6 +9,7 @@ const SHADER_SOURCE: &str = r#"
 
 struct Globals {
     screen_size: vec2<f32>,
+    particle_size: f32,
 };
 
 // Wir binden den Buffer an Gruppe 0, Binding 0
@@ -28,7 +29,7 @@ fn vs_main(
     var out: VertexOutput; 
 
     // konstanten für die Partikel Darstelliung
-    let particle_size: f32 = 12.0;      //      ----------!!als Parameter setzen später!!----------
+    let particle_size: f32 = 2 * globals.particle_size;      //      ----------!!als Parameter setzen später!!----------
 
     // quad von -0.5 bis +0.5 auf pixel-größe skalieren
     let scaled_pos = vertex_pos * particle_size;
@@ -70,7 +71,8 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlobalUniforms {
     screen_size: [f32; 2],
-    _padding: [f32; 2], // Wichtig für 16-Byte Alignment
+    particle_size: f32,
+    _padding: f32, // Wichtig für 16-Byte Alignment
 }
 
 // Renderer für Partikel als Kreise mit GPU-Instancing
@@ -84,6 +86,8 @@ pub struct ParticleRenderer {
     uniform_bind_group: wgpu::BindGroup,
     instance_count: u32, // Partikelanzahl
     max_particles: u32,  // kann später für Buffer Kapazität benutzt werden
+    screen_size: [f32; 2],
+    particle_size: f32,
 }
 
 // repräsentation eines Partikels in GPU
@@ -157,7 +161,8 @@ impl ParticleRenderer {
         //  Creating Uniform Buffer
         let uniforms = GlobalUniforms {
             screen_size: [config.width as f32, config.height as f32],
-            _padding: [0.0, 0.0],
+            particle_size: 12.0,
+            _padding: 0.0,
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -212,7 +217,7 @@ impl ParticleRenderer {
             // Vertex Shader
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: Some("vs_main"),
+                entry_point: "vs_main",
                 buffers: &[
                     Vertex::desc(),           //@location(0) für quad geometrie
                     ParticleInstance::desc(), //@location(1) für partikel position
@@ -222,7 +227,7 @@ impl ParticleRenderer {
             // Fragment Shader
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: Some("fs_main"),
+                entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,                         // Surface Format
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING), // Alpha Blending on
@@ -237,7 +242,6 @@ impl ParticleRenderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         });
 
         // Vertex-Buffer wird erstellt für die Quad Geometrie
@@ -265,13 +269,16 @@ impl ParticleRenderer {
             uniform_bind_group,
             instance_count: 0,
             max_particles,
+            screen_size: [config.width as f32, config.height as f32],
+            particle_size: 12.0,
         }
     }
 
     pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
         let uniforms = GlobalUniforms {
             screen_size: [width as f32, height as f32],
-            _padding: [0.0, 0.0],
+            particle_size: self.particle_size,
+            _padding: 0.0,
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
@@ -307,6 +314,15 @@ impl ParticleRenderer {
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.draw(0..6, 0..self.instance_count); //mind. 6 vertices
+    }
+    // passt die größe der spawnenden Partikel an die geänderten Parameter an
+    pub fn update_particle_size(&self, queue: &Queue, size: f32) {
+        let uniforms = GlobalUniforms {
+            screen_size: self.screen_size,
+            particle_size: size,
+            _padding: 0.0,
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 }
 
