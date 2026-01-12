@@ -2,11 +2,10 @@ use super::Scene;
 use glam::Vec2;
 use pp_physics::{Particle, World};
 use pp_render::{ParticleRenderer, RenderContext};
+use rand::prelude::*;
 
 //Using constant placeholders for window size
 //Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
-const WIDTH: usize = 800;
-const HEIGHT: usize = 600;
 
 pub struct FallingParticles {
     gravity: f32,
@@ -21,7 +20,7 @@ impl FallingParticles {
             gravity: 9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
             spawnrate: None,
             color: [1.0, 0.2, 0.2, 1.0],
-            particle_radius: 20.0,
+            particle_radius: 2.0,
         }
     }
 }
@@ -64,6 +63,8 @@ impl Scene for FallingParticles {
         left_click: bool,
         is_middle: bool,
     ) {
+        let mut rng = rand::thread_rng();
+
         if left_click {
             let id = world.add_particle(Particle::new(mouse_pos));
             println!("Spawned particle #{id} at {:?}", mouse_pos);
@@ -78,10 +79,21 @@ impl Scene for FallingParticles {
             } else {
                 println!("No particle close to {:?}", mouse_pos);
             }
+
+            let random_spawn_num: i8 = rng.gen();
+
+            for _i in 0..random_spawn_num {
+                let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
+                let y = rng.gen_range(mouse_pos.y - 20.0..mouse_pos.y + 20.0);
+                let random_pos: Vec2 = Vec2::new(x, y);
+                world.add_particle(Particle::new(random_pos));
+            }
         }
 
         if is_middle {
-            self.color = [0.2, 0.2, 1.0, 1.0];
+            let random_color: [f32; 4] = rng.gen();
+
+            self.color = random_color;
         }
     }
 
