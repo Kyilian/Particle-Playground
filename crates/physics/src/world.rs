@@ -3,11 +3,14 @@ use glam::Vec2;
 
 //Adding const to simply change the values if needed
 const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, 9.81);
-
+const DEFAULT_PARTICLE_RADIUS: f32 = 6.0;
+const DEFAULT_RESTITUTION: f32 = 0.96;
 pub struct World {
     pub particles: Vec<Particle>,
     pub gravity: Vec2,
     pub colliders: Vec<CircleCollider>,
+    pub particle_radius: f32,
+    pub restitution: f32,
 }
 
 impl Default for World {
@@ -22,6 +25,8 @@ impl World {
             particles: Vec::new(),
             gravity: DEFAULT_GRAVITY,
             colliders: Vec::new(),
+            particle_radius: DEFAULT_PARTICLE_RADIUS,
+            restitution: DEFAULT_RESTITUTION,
         }
     }
 
@@ -78,10 +83,6 @@ impl World {
     }
 
     pub fn solve_particle_collisions(&mut self) {
-        let restitution = 0.96;
-        let radius = 6.0;
-        let min_dist = 2.0 * radius;
-
         let n = self.particles.len();
         for i in 0..n {
             for j in (i + 1)..n {
@@ -89,17 +90,32 @@ impl World {
                 let a = &mut left[i];
                 let b = &mut right[0];
 
+                let min_dist = 2.0 * self.particle_radius;
+                //falls unterschiedlich große partikel implementiert
+                //let min_dist = a.radius + b.radius;
                 let dir = b.pos - a.pos;
                 let dist = dir.length();
 
                 // overlap
                 if dist < min_dist {
-                    let normal = dir / dist; // einheitsvektor von a nach b (normale)
+                    let normal = if dist > 0.0 {
+                        // einheitsvektor von a nach b (normale) + dist != 0
+                        dir / dist
+                    } else {
+                        Vec2::X // ausweichvektor für case dist = 0
+                    };
                     let overlap = min_dist - dist;
 
                     let correction = normal * (overlap * 0.5);
                     a.pos -= correction;
                     b.pos += correction;
+
+                    //falls unterschiedlich große partikel implementiert
+                    //let total = a.radius + b.radius;
+                    //let wa = b.radius / total; // a wird weniger bewegt, wenn a groß ist
+                    //let wb = a.radius / total;
+                    //a.pos -= normal * overlap * wa;
+                    //b.pos += normal * overlap * wb;
 
                     // vel = pos - old_pos
                     let vel_a = a.pos - a.old_pos;
@@ -110,7 +126,7 @@ impl World {
 
                     // kleiner 0 bedeutet sie bewegen sich aufeinander zu -> bounce
                     if rel_normal_speed < 0.0 {
-                        let bounce = -(1.0 + restitution) * rel_normal_speed * 0.5;
+                        let bounce = -(1.0 + self.restitution) * rel_normal_speed * 0.5;
                         let bounce_vec = normal * bounce;
 
                         let vel_a2 = vel_a - bounce_vec;
@@ -250,5 +266,93 @@ mod test {
             vel,
             normal
         );
+    }
+    //Ai Unit Tests Gemini
+    #[test]
+    fn particles_separate_when_overlapping() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions();
+
+        let d = (world.particles[1].pos - world.particles[0].pos).length();
+        assert!(d >= 12.0 - 1e-4, "Particles still overlap: d={}", d);
+    }
+    #[test]
+    fn particles_do_not_move_when_not_overlapping() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        let a0 = a.pos;
+        let b0 = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions();
+
+        assert!((world.particles[0].pos - a0).length() < 1e-6);
+        assert!((world.particles[1].pos - b0).length() < 1e-6);
+    }
+    #[test]
+    fn particles_bounce_when_moving_towards_each_other() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        a.old_pos = Vec2::new(-1.0, 0.0);
+
+        let mut b = Particle::new(Vec2::new(11.0, 0.0)); // overlap
+        b.old_pos = Vec2::new(12.0, 0.0);
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions();
+
+        let p0 = world.particles[0];
+        let p1 = world.particles[1];
+
+        let dir = p1.pos - p0.pos;
+        let dist = dir.length().max(1e-6);
+        let normal = dir / dist;
+
+        let vel_a = p0.pos - p0.old_pos;
+        let vel_b = p1.pos - p1.old_pos;
+
+        let rel = (vel_b - vel_a).dot(normal);
+
+        assert!(rel >= -1e-4, "Still moving towards each other: rel={}", rel);
+    }
+
+    #[test]
+    fn particles_with_same_position_get_separated() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions();
+
+        let d = (world.particles[1].pos - world.particles[0].pos).length();
+        assert!(d >= 12.0 - 1e-4, "dist==0 case not separated: d={}", d);
     }
 }

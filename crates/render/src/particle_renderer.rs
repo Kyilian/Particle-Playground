@@ -217,7 +217,7 @@ impl ParticleRenderer {
             // Vertex Shader
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: Some("vs_main"),
+                entry_point: "vs_main",
                 buffers: &[
                     Vertex::desc(),           //@location(0) für quad geometrie
                     ParticleInstance::desc(), //@location(1) für partikel position
@@ -227,7 +227,7 @@ impl ParticleRenderer {
             // Fragment Shader
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: Some("fs_main"),
+                entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,                         // Surface Format
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING), // Alpha Blending on
@@ -242,7 +242,7 @@ impl ParticleRenderer {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
+            //cache: None,
         });
 
         // Vertex-Buffer wird erstellt für die Quad Geometrie
@@ -333,6 +333,15 @@ impl ParticleRenderer {
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.draw(0..6, 0..self.instance_count); //mind. 6 vertices
+    }
+    // passt die größe der spawnenden Partikel an die geänderten Parameter an
+    pub fn update_particle_size(&self, queue: &Queue, size: f32) {
+        let uniforms = GlobalUniforms {
+            screen_size_wrapper: [self.size.0 as f32, self.size.1 as f32, 0.0, 0.0],
+            color: [1.0, 1.0, 1.0, 1.0],
+            particle_size_wrapper: [size, 0.0, 0.0, 0.0],
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 }
 
