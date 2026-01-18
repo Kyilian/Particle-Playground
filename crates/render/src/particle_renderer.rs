@@ -322,7 +322,7 @@ impl ParticleRenderer {
     }
 
     // Rendert alle Partikel in einem Draw-Call
-    pub fn render(&self, render_pass: &mut wgpu::RenderPass<'_>) {
+    pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         if self.instance_count == 0 {
             return; // macht nichts wenn keine Artikel vorhanden
         }

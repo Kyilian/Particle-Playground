@@ -9,9 +9,8 @@ pub const WINDOW_HEIGHT: u32 = 600;
 //Render COntext should make it easier to call the renderer in the different scenes.
 //We call the renderer with this struct, so we can add things later for example rectangles
 pub struct RenderContext<'a> {
-    pub renderer: &'a mut ParticleRenderer,
+    pub particle_renderer: &'a ParticleRenderer,
     pub queue: &'a wgpu::Queue,
-    pub pass: &'a mut wgpu::RenderPass<'a>,
     pub device: &'a wgpu::Device,
 }
 

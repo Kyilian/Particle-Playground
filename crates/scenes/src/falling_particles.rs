@@ -39,19 +39,17 @@ impl Scene for FallingParticles {
     }
 
     //call to the render function
-    fn render(&self, world: &World, ctx: &mut RenderContext) {
+    fn render<'rpass>(&self, world: &World, ctx: &RenderContext<'rpass>, render_pass: &mut wgpu::RenderPass<'rpass>) {  
         //let width = ctx.renderer.config.width as f32;
 
-        ctx.renderer.update_render_settings(
+        ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.color, // Rot
             self.particle_radius,
         );
 
-        ctx.renderer.update_particles(&world.particles, ctx.queue);
-
         //draw the particles
-        ctx.renderer.render(ctx.pass);
+        ctx.particle_renderer.render(render_pass);
     }
 
     // Spawn a particle with a click
@@ -101,7 +99,7 @@ impl Scene for FallingParticles {
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
         self.gravity = 9.81;
-        _world.clear();
+        _world.clear_particles();       //zu clear_particles geändert damit collidor vorhanden bleibt
     }
 
     //Basic UI to test Sliders and Buttos

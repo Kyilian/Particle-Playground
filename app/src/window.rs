@@ -74,7 +74,6 @@ impl RenderWindow {
                 label: None,
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
-                memory_hints: wgpu::MemoryHints::Performance,
             },
             None,
         ))?;
@@ -154,9 +153,9 @@ impl RenderWindow {
                 // 1. HAUPT-BLOCK: FENSTER EVENTS
                 Event::WindowEvent { event: ref win_event, .. } => {
                     
-                    //let response = render_window
-                    //    .egui_state
-                    //    .on_window_event(&*window, &win_event);
+                    let response = render_window
+                        .egui_state
+                        .on_window_event(&*window, &win_event);
 
                     // ÄNDERUNG: Hier stand vorher 'match event'. 
                     // Wir matchen jetzt direkt auf 'win_event', damit wir die Struktur nicht doppeln.
@@ -180,7 +179,7 @@ impl RenderWindow {
                             );
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
-                            //if !response.consumed {
+                            if !response.consumed {
                                 // Deine Klick-Logik (unverändert übernommen)
                                 if *state == ElementState::Pressed {
                                     let is_left = *button == MouseButton::Left;
@@ -195,7 +194,7 @@ impl RenderWindow {
                                         is_middle,
                                     );
                                 }
-                           // }
+                            }
                         }
                         WindowEvent::Resized(physical_size) => {
                             render_window.resize(physical_size.width, physical_size.height);
@@ -227,11 +226,14 @@ impl RenderWindow {
                     accumulator += frame_time;
                     
                     while accumulator >= TIME_STEP {
-                        render_window.world.step(TIME_STEP);
+                        render_window.current_scene.update(&mut render_window.world, TIME_STEP);
                         accumulator -= TIME_STEP;
                     }
 
-                    render_window.particle_renderer.update_particles(&render_window.world.particles, &render_window.queue);
+                    render_window.particle_renderer.update_particles(
+                        &render_window.world.particles,
+                        &render_window.queue
+                    );
                     
 
                     let raw_input = render_window.egui_state.take_egui_input(&*window);
@@ -354,24 +356,20 @@ impl RenderWindow {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            let mut ctx = RenderContext {
-                renderer: &mut self.particle_renderer,
+
+            let ctx = RenderContext {
+                particle_renderer: &self.particle_renderer,
                 queue: &self.queue,
-                pass: &mut render_pass,
                 device: &self.device,
             };
 
-            self.current_scene.render(&self.world, &mut ctx);
+            self.current_scene.render(&self.world, &ctx, &mut render_pass);
 
             
             self.egui_renderer
                 .render(&mut render_pass, &paint_jobs, &screen_descriptor);
             
-
             // render pass ends here automatically when dropped
-        //draw particle
-        self.particle_renderer.render(&mut render_pass);
-
             
         }
         
