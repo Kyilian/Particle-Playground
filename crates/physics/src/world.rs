@@ -1,5 +1,6 @@
 use crate::{CircleCollider, Particle};
 use glam::Vec2;
+use std::collections::HashMap;
 
 //Adding const to simply change the values if needed
 const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, 9.81);
@@ -82,6 +83,7 @@ impl World {
         }
     }
 
+    //komplexität n^2
     pub fn solve_particle_collisions(&mut self) {
         let n = self.particles.len();
         for i in 0..n {
@@ -140,12 +142,110 @@ impl World {
         }
     }
 
+    pub fn solve_particle_collisions_grid(&mut self) {
+        let min_dist = 2.0 * self.particle_radius;
+        let cell_size = min_dist.max(1e-6);
+
+        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
+
+        for (idx, p) in self.particles.iter().enumerate() {
+            let cx = (p.pos.x / cell_size).floor() as i32;
+            let cy = (p.pos.y / cell_size).floor() as i32;
+            grid.entry((cx, cy)).or_default().push(idx);
+        }
+
+        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // doppelchecken vermeiden
+        let mut pairs: Vec<(usize, usize)> = Vec::new();
+
+        for (&cell, indices) in grid.iter() {
+            for (dx, dy) in OFFS {
+                let ncell = (cell.0 + dx, cell.1 + dy);
+                let Some(nindices) = grid.get(&ncell) else {
+                    continue;
+                };
+
+                if dx == 0 && dy == 0 {
+                    //paar in der gleichen Zelle
+                    for a in 0..indices.len() {
+                        for b in (a + 1)..indices.len() {
+                            let i = indices[a];
+                            let j = indices[b];
+                            if i < j {
+                                pairs.push((i, j));
+                            } else {
+                                pairs.push((j, i));
+                            }
+                        }
+                    }
+                } else {
+                    //paare zwischen Zelle und Nachbarzelle
+                    for &i in indices {
+                        for &j in nindices {
+                            if i == j {
+                                continue;
+                            }
+                            if i < j {
+                                pairs.push((i, j));
+                            } else {
+                                pairs.push((j, i));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        // deterministisch + doppelte raus
+
+        pairs.sort_unstable();
+        pairs.dedup();
+
+        //kollisionscode für paare
+
+        let restitution = self.restitution;
+
+        for (i, j) in pairs {
+            let (left, right) = self.particles.split_at_mut(j);
+            let a = &mut left[i];
+            let b = &mut right[0];
+
+            let dir = b.pos - a.pos;
+            let dist = dir.length();
+
+            if dist < min_dist {
+                let normal = if dist > 0.0 { dir / dist } else { Vec2::X };
+
+                let overlap = min_dist - dist;
+                let correction = normal * (overlap * 0.5);
+                a.pos -= correction;
+                b.pos += correction;
+
+                let vel_a = a.pos - a.old_pos;
+                let vel_b = b.pos - b.old_pos;
+
+                let rel_vel = vel_b - vel_a;
+                let rel_normal_speed = rel_vel.dot(normal);
+
+                if rel_normal_speed < 0.0 {
+                    let bounce = -(1.0 + restitution) * rel_normal_speed * 0.5;
+                    let bounce_vec = normal * bounce;
+
+                    let vel_a2 = vel_a - bounce_vec;
+                    let vel_b2 = vel_b + bounce_vec;
+
+                    a.old_pos = a.pos - vel_a2;
+                    b.old_pos = b.pos - vel_b2;
+                }
+            }
+        }
+    }
+
     //ein "Simulationsschritt“ (forces → integration → collisions)
     pub fn step(&mut self, dt: f32) {
         self.apply_forces();
         self.update_positions(dt);
         self.solve_collisions();
-        self.solve_particle_collisions();
+        // self.solve_particle_collisions();
+        self.solve_particle_collisions_grid();
     }
 
     //resets all particles
@@ -358,5 +458,93 @@ mod test {
 
         let d = (world.particles[1].pos - world.particles[0].pos).length();
         assert!(d >= 12.0 - 1e-4, "dist==0 case not separated: d={}", d);
+    }
+    //Generated with ChatGPT5
+    #[test]
+    fn grid_particles_separate_when_overlapping() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions_grid();
+
+        let d = (world.particles[1].pos - world.particles[0].pos).length();
+        assert!(d >= 12.0 - 1e-4, "Particles still overlap: d={}", d);
+    }
+
+    #[test]
+    fn grid_particles_do_not_move_when_not_overlapping() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        let a0 = a.pos;
+        let b0 = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions_grid();
+
+        assert!((world.particles[0].pos - a0).length() < 1e-6);
+        assert!((world.particles[1].pos - b0).length() < 1e-6);
+    }
+
+    #[test]
+    fn grid_particles_with_same_position_get_separated() {
+        let mut world = World::new();
+
+        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
+
+        a.old_pos = a.pos;
+        b.old_pos = b.pos;
+
+        world.add_particle(a);
+        world.add_particle(b);
+
+        world.solve_particle_collisions_grid();
+
+        let d = (world.particles[1].pos - world.particles[0].pos).length();
+        assert!(d >= 12.0 - 1e-4, "dist==0 case not separated: d={}", d);
+    }
+    #[test]
+    fn grid_matches_naive_for_small_case() {
+        let mut w1 = World::new();
+        let mut w2 = World::new();
+
+        // Mix aus Kollision / keine Kollision / diagonal
+        let mut p0 = Particle::new(Vec2::new(0.0, 0.0));
+        let mut p1 = Particle::new(Vec2::new(11.5, 0.0)); // overlap (min_dist=12)
+        let mut p2 = Particle::new(Vec2::new(30.0, 0.0)); // no overlap
+        let mut p3 = Particle::new(Vec2::new(11.5, 11.5)); // diagonal neighbor
+
+        for p in [&mut p0, &mut p1, &mut p2, &mut p3] {
+            p.old_pos = p.pos; // keine Bewegung, nur overlap resolution
+        }
+
+        for p in [p0, p1, p2, p3] {
+            w1.add_particle(p);
+            w2.add_particle(p);
+        }
+
+        w1.solve_particle_collisions(); // naive
+        w2.solve_particle_collisions_grid(); // grid
+
+        for i in 0..w1.particles.len() {
+            let d = (w1.particles[i].pos - w2.particles[i].pos).length();
+            assert!(d < 1e-5, "Mismatch at {}: d={}", i, d);
+        }
     }
 }
