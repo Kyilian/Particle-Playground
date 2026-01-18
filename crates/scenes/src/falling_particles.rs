@@ -39,7 +39,12 @@ impl Scene for FallingParticles {
     }
 
     //call to the render function
-    fn render<'rpass>(&self, world: &World, ctx: &RenderContext<'rpass>, render_pass: &mut wgpu::RenderPass<'rpass>) {  
+    fn render<'rpass>(
+        &self,
+        world: &World,
+        ctx: &RenderContext<'rpass>,
+        render_pass: &mut wgpu::RenderPass<'rpass>,
+    ) {
         //let width = ctx.renderer.config.width as f32;
 
         ctx.particle_renderer.update_render_settings(
@@ -78,7 +83,7 @@ impl Scene for FallingParticles {
                 println!("No particle close to {:?}", mouse_pos);
             }
 
-            let random_spawn_num: i8 = rng.gen();
+            let random_spawn_num: u8 = rng.gen();
 
             for _i in 0..random_spawn_num {
                 let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
@@ -99,7 +104,7 @@ impl Scene for FallingParticles {
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
         self.gravity = 9.81;
-        _world.clear_particles();       //zu clear_particles geändert damit collidor vorhanden bleibt
+        _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
     }
 
     //Basic UI to test Sliders and Buttos
@@ -116,5 +121,95 @@ impl Scene for FallingParticles {
                 self.reset(_world);
             }
         });
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use glam::Vec2;
+    use pp_physics::World;
+
+    #[test]
+    fn test_initial_state() {
+        let scene = FallingParticles::new();
+        // Standardwerte prüfen
+        assert_eq!(scene.gravity, 9.81);
+        assert_eq!(scene.particle_radius, 2.0);
+        assert_eq!(scene.color, [1.0, 0.2, 0.2, 1.0]);
+    }
+
+    #[test]
+    fn test_update_propagates_gravity_to_world() {
+        let mut scene = FallingParticles::new();
+        let mut world = World::new();
+        scene.gravity = 20.0;
+
+        scene.update(&mut world, 0.016);
+
+        assert_eq!(world.gravity.y, 20.0);
+        assert_eq!(world.gravity.x, 0.0);
+    }
+
+    #[test]
+    fn test_left_click_spawns_single_particle() {
+        let mut scene = FallingParticles::new();
+        let mut world = World::new();
+        let click_pos = Vec2::new(100.0, 100.0);
+
+        scene.on_click(&mut world, click_pos, false, true, false);
+
+        assert_eq!(
+            world.particles.len(),
+            1,
+            "Es sollte genau 1 Partikel gespawnt sein"
+        );
+
+        let p = &world.particles[0];
+
+        let diff = p.pos - click_pos;
+        assert!(diff.length() < 0.001);
+    }
+
+    #[test]
+    fn test_middle_click_changes_color() {
+        let mut scene = FallingParticles::new();
+        let mut world = World::new();
+        let old_color = scene.color;
+
+        let mut color_changed = false;
+
+        for _ in 0..5 {
+            scene.on_click(&mut world, Vec2::ZERO, false, false, true);
+
+            if scene.color != old_color {
+                color_changed = true;
+                break;
+            }
+        }
+
+        assert!(
+            color_changed,
+            "Middle click should change the particle color"
+        );
+    }
+
+    #[test]
+    fn test_reset_clears_particles_and_resets_gravity() {
+        let mut scene = FallingParticles::new();
+        let mut world = World::new();
+
+        scene.gravity = 500.0;
+
+        scene.on_click(&mut world, Vec2::ZERO, false, true, false);
+        scene.on_click(&mut world, Vec2::ZERO, false, true, false);
+        assert_eq!(world.particles.len(), 2);
+
+        scene.reset(&mut world);
+
+        assert_eq!(
+            scene.gravity, 9.81,
+            "Gravity sollte auf Default zurückgesetzt sein"
+        );
+        assert_eq!(world.particles.len(), 0, "Partikel sollten gelöscht sein");
     }
 }

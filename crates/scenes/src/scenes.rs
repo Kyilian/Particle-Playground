@@ -8,7 +8,12 @@ use pp_render::RenderContext;
 pub trait Scene {
     fn update(&mut self, world: &mut World, dt: f32);
 
-    fn render<'rpass>(&self, world: &World, ctx: &RenderContext<'rpass>, render_pass: &mut wgpu::RenderPass<'rpass>);
+    fn render<'rpass>(
+        &self,
+        world: &World,
+        ctx: &RenderContext<'rpass>,
+        render_pass: &mut wgpu::RenderPass<'rpass>,
+    );
 
     fn on_click(
         &mut self,

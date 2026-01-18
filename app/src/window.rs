@@ -109,7 +109,7 @@ impl RenderWindow {
             None,
         );
 
-        let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1, );
+        let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1);
 
         //adding so the circle_collider is stays in the center while resizing
         let mut world = World::new();
@@ -151,13 +151,15 @@ impl RenderWindow {
         event_loop.run(move |event, elwt| {
             match event {
                 // 1. HAUPT-BLOCK: FENSTER EVENTS
-                Event::WindowEvent { event: ref win_event, .. } => {
-                    
+                Event::WindowEvent {
+                    event: ref win_event,
+                    ..
+                } => {
                     let response = render_window
                         .egui_state
                         .on_window_event(&*window, &win_event);
 
-                    // ÄNDERUNG: Hier stand vorher 'match event'. 
+                    // ÄNDERUNG: Hier stand vorher 'match event'.
                     // Wir matchen jetzt direkt auf 'win_event', damit wir die Struktur nicht doppeln.
                     match win_event {
                         WindowEvent::CloseRequested => {
@@ -201,8 +203,7 @@ impl RenderWindow {
                         }
                         _ => {}
                     }
-                } 
-
+                }
 
                 Event::AboutToWait => {
                     let current_time = std::time::Instant::now();
@@ -217,30 +218,37 @@ impl RenderWindow {
 
                     if fps_acc_time >= 0.5 {
                         fps = fps_frames as f32 / fps_acc_time;
-                        println!("FPS: {:.1} | Particles: {}", fps, render_window.world.particles.len());
+                        println!(
+                            "FPS: {:.1} | Particles: {}",
+                            fps,
+                            render_window.world.particles.len()
+                        );
                         fps_acc_time = 0.0;
                         fps_frames = 0;
                     }
 
                     last_time = current_time;
                     accumulator += frame_time;
-                    
+
                     while accumulator >= TIME_STEP {
-                        render_window.current_scene.update(&mut render_window.world, TIME_STEP);
+                        render_window
+                            .current_scene
+                            .update(&mut render_window.world, TIME_STEP);
                         accumulator -= TIME_STEP;
                     }
 
-                    render_window.particle_renderer.update_particles(
-                        &render_window.world.particles,
-                        &render_window.queue
-                    );
-                    
+                    render_window
+                        .particle_renderer
+                        .update_particles(&render_window.world.particles, &render_window.queue);
 
                     let raw_input = render_window.egui_state.take_egui_input(&*window);
                     render_window.egui_state.egui_ctx().begin_frame(raw_input);
 
                     // Deine UI Definition
-                    render_window.current_scene.ui(render_window.egui_state.egui_ctx(), &mut render_window.world);
+                    render_window.current_scene.ui(
+                        render_window.egui_state.egui_ctx(),
+                        &mut render_window.world,
+                    );
 
                     let full_output = render_window.egui_state.egui_ctx().end_frame();
 
@@ -263,8 +271,6 @@ impl RenderWindow {
         })?;
         Ok(())
     }
-    
-
 
     fn resize(&mut self, new_width: u32, new_height: u32) {
         if new_height == 0 || new_width == 0 {
@@ -363,16 +369,14 @@ impl RenderWindow {
                 device: &self.device,
             };
 
-            self.current_scene.render(&self.world, &ctx, &mut render_pass);
+            self.current_scene
+                .render(&self.world, &ctx, &mut render_pass);
 
-            
             self.egui_renderer
                 .render(&mut render_pass, &paint_jobs, &screen_descriptor);
-            
+
             // render pass ends here automatically when dropped
-            
         }
-        
 
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
