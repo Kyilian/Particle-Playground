@@ -154,6 +154,28 @@ impl World {
         self.colliders.clear();
         self.gravity = DEFAULT_GRAVITY;
     }
+
+    pub fn clear_particles(&mut self) {
+        self.particles.clear()
+    }
+
+    // funktion für nearest neighbour search
+    //moved the nearest neighbour search into physics
+    pub fn find_nearest_particle(&mut self, mouse_pos: Vec2) -> Option<usize> {
+        let mut nearest: Option<usize> = None;
+        let mut nearest_dist2 = f32::MAX;
+
+        for (i, p) in self.particles.iter().enumerate() {
+            let d = p.pos - mouse_pos;
+            let dist2 = d.length_squared();
+
+            if dist2 < nearest_dist2 {
+                nearest_dist2 = dist2;
+                nearest = Some(i);
+            }
+        }
+        nearest
+    }
 }
 
 #[cfg(test)]

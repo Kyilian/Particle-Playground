@@ -11,3 +11,5 @@ pp_render = { path = "../render" }
 
 egui =  {workspace = true}
 glam = {workspace = true}
+wgpu ={ workspace = true}
+rand ={ workspace = true}

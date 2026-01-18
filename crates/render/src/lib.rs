@@ -1,12 +1,18 @@
 mod particle_renderer;
-mod window;
 
 pub use particle_renderer::ParticleRenderer;
 pub use wgpu;
-pub use window::RenderWindow;
 
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 600;
+
+//Render COntext should make it easier to call the renderer in the different scenes.
+//We call the renderer with this struct, so we can add things later for example rectangles
+pub struct RenderContext<'a> {
+    pub particle_renderer: &'a ParticleRenderer,
+    pub queue: &'a wgpu::Queue,
+    pub device: &'a wgpu::Device,
+}
 
 #[cfg(test)]
 mod tests {
