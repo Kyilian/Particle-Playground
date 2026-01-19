@@ -259,6 +259,10 @@ impl World {
         self.particles.clear()
     }
 
+    pub fn clear_collider(&mut self){
+        self.colliders.clear();
+    }
+
     // funktion für nearest neighbour search
     //moved the nearest neighbour search into physics
     pub fn find_nearest_particle(&mut self, mouse_pos: Vec2) -> Option<usize> {
