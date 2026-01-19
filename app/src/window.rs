@@ -218,6 +218,8 @@ impl RenderWindow {
 
                     if fps_acc_time >= 0.5 {
                         fps = fps_frames as f32 / fps_acc_time;
+
+                        render_window.world.fps = fps;
                         println!(
                             "FPS: {:.1} | Particles: {}",
                             fps,

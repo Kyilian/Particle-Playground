@@ -14,6 +14,8 @@ pub struct FallingParticles {
     color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
+
+    fps: f32,
 }
 
 impl FallingParticles {
@@ -25,6 +27,7 @@ impl FallingParticles {
             particle_radius: 2.0,
             collider_radius: 250.0,
             collider_old: 250.0,
+            fps: 60.0,
         }
     }
 }
@@ -50,6 +53,8 @@ impl Scene for FallingParticles {
              self.collider_old = self.collider_radius;
 
         }
+
+        _world.particle_radius= self.particle_radius;
     }
 
     //call to the render function
@@ -120,16 +125,33 @@ impl Scene for FallingParticles {
         self.gravity = 9.81;
         _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
     }
+    
 
     //Basic UI to test Sliders and Buttos
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut World) {
         egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.label("FPS:");
+
+                let color = if _world.fps < 30.0 { 
+                    egui::Color32::RED 
+                } else { 
+                    egui::Color32::GREEN 
+                };
+                
+                ui.colored_label(color, format!("{:.1}", _world.fps));
+            });
+            
+            ui.separator();
             ui.label("Test Parameter");
 
             ui.add(egui::Slider::new(&mut self.gravity, 0.0..=2000.0).text("Gravity"));
             ui.separator();
 
             ui.add(egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Collider"));
+            ui.separator();
+
+            ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
             ui.separator();
 
             ui.label(format!("Partikel: {}", _world.particles.len()));

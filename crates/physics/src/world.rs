@@ -12,6 +12,7 @@ pub struct World {
     pub colliders: Vec<CircleCollider>,
     pub particle_radius: f32,
     pub restitution: f32,
+    pub fps: f32
 }
 
 impl Default for World {
@@ -28,6 +29,7 @@ impl World {
             colliders: Vec::new(),
             particle_radius: DEFAULT_PARTICLE_RADIUS,
             restitution: DEFAULT_RESTITUTION,
+            fps: 0.0,
         }
     }
 
