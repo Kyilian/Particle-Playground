@@ -75,7 +75,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlobalUniforms {
     pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
-    pub color: [f32; 4],
+    pub _padding: [f32; 4],
     pub particle_size_wrapper: [f32; 4],
 }
 
@@ -137,14 +137,11 @@ impl Vertex {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
+            attributes: &[wgpu::VertexAttribute {
                 offset: 0,
                 shader_location: 0, //@location(0) is Shader
                 format: wgpu::VertexFormat::Float32x2,
-            }
-                
-            ],
+            }],
         }
     }
 }
@@ -155,21 +152,21 @@ impl ParticleInstance {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<ParticleInstance>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[wgpu::VertexAttribute {
-                offset: 0,
-                shader_location: 1, //@location(1) is Shader
-                format: wgpu::VertexFormat::Float32x2,
-            },
-            //for the individual color switch, could be changed later if we use seperate shaders
+            attributes: &[
                 wgpu::VertexAttribute {
-                offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress, 
-                shader_location: 2, 
-                format: wgpu::VertexFormat::Float32x4,
+                    offset: 0,
+                    shader_location: 1, //@location(1) is Shader
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                //for the individual color switch, could be changed later if we use seperate shaders
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    shader_location: 2,
+                    format: wgpu::VertexFormat::Float32x4,
                 },
             ],
         }
     }
-    
 }
 
 impl ParticleRenderer {
@@ -177,7 +174,7 @@ impl ParticleRenderer {
         //  Creating Uniform Buffer
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
-            color: [1.0, 1.0, 1.0, 1.0],
+            _padding: [1.0, 1.0, 1.0, 1.0],
             particle_size_wrapper: [12.0, 0.0, 0.0, 0.0],
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -269,7 +266,7 @@ impl ParticleRenderer {
         });
 
         // Instance Buffer, wird für jeden Frame aktualisiert
-        let max_particles = 20000; //max 10k particles
+        let max_particles = 30000; //for now max particles is fixed, could be changed later
         let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Instance Buffer"),
             size: (max_particles * std::mem::size_of::<ParticleInstance>() as u32) as u64,
@@ -290,6 +287,10 @@ impl ParticleRenderer {
         }
     }
 
+    pub fn get_max_particles(&self) -> u32 {
+        self.max_particles
+    }
+
     //To call the scene
     pub fn update_render_settings(&self, queue: &Queue, color: [f32; 4], particle_radius: f32) {
         let width = self.size.0 as f32;
@@ -297,7 +298,7 @@ impl ParticleRenderer {
 
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
-            color: color,
+            _padding: color,
             particle_size_wrapper: [particle_radius, 0.0, 0.0, 0.0], // these zeros are placeholders because I had problems if i did not used 16 byte blocks
         };
 
@@ -320,27 +321,26 @@ impl ParticleRenderer {
 
     // Aktualisiert die Partikel-Positionen auf der GPU
     pub fn update_particles(&mut self, particles: &[Particle], queue: &Queue) {
-
-        let color_slow = [0.2, 0.2, 1.0, 1.0]; 
-        let color_fast = [1.0, 0.2, 0.2, 1.0]; 
-        let max_speed = 5.0; 
+        let color_slow = [0.2, 0.2, 1.0, 1.0];
+        let color_fast = [1.0, 0.2, 0.2, 1.0];
+        let max_speed = 5.0;
 
         //Particle -> ParticleInstance
         let instances: Vec<ParticleInstance> = particles
             .iter()
             .map(|p| {
-                // 1. Geschwindigkeit berechnen
+                //  calculate speed
                 let velocity = p.pos - p.old_pos;
                 let speed = velocity.length();
 
-                // 2. Faktor t berechnen (0.0 bis 1.0)
+                // maps the speed on a 0.0 to 1.0 scale
                 let t = (speed / max_speed).clamp(0.0, 1.0);
 
-                // 3. Farbe interpolieren (Lerp)
+                // gives the partile a color based on its speed
                 let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
                 let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
                 let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
-                
+
                 ParticleInstance {
                     position: [p.pos.x, p.pos.y],
                     color: [r, g, b, 1.0],
@@ -374,7 +374,7 @@ impl ParticleRenderer {
     pub fn update_particle_size(&self, queue: &Queue, size: f32) {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [self.size.0 as f32, self.size.1 as f32, 0.0, 0.0],
-            color: [0.0, 1.0, 1.0, 1.0],
+            _padding: [0.0, 1.0, 1.0, 1.0], // color is not used anymore because we render individual colors direclty for interpolation based on speed
             particle_size_wrapper: [size, 0.0, 0.0, 0.0],
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));

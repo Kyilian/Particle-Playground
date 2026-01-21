@@ -1,6 +1,5 @@
-use egui;
 use glam::Vec2;
-use pp_physics::{CircleCollider, Particle, World};
+use pp_physics::{CircleCollider, World};
 use pp_render::{ParticleRenderer, RenderContext};
 use pp_scenes::Scene;
 use std::sync::Arc; //Arc for dual ownership
@@ -38,7 +37,6 @@ impl RenderWindow {
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
-        let mut fps: f32 = 0.0;
 
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
@@ -146,7 +144,6 @@ impl RenderWindow {
         const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
         let mut accumulator = 0.0; // "Zeit-Speicher"
 
-
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
@@ -217,7 +214,7 @@ impl RenderWindow {
                     fps_frames += 1;
 
                     if fps_acc_time >= 0.5 {
-                        fps = fps_frames as f32 / fps_acc_time;
+                        let fps: f32 = fps_frames as f32 / fps_acc_time;
 
                         render_window.world.fps = fps;
                         println!(

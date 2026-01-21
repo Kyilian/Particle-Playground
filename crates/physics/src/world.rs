@@ -12,7 +12,7 @@ pub struct World {
     pub colliders: Vec<CircleCollider>,
     pub particle_radius: f32,
     pub restitution: f32,
-    pub fps: f32
+    pub fps: f32,
 }
 
 impl Default for World {
@@ -261,7 +261,7 @@ impl World {
         self.particles.clear()
     }
 
-    pub fn clear_collider(&mut self){
+    pub fn clear_collider(&mut self) {
         self.colliders.clear();
     }
 
