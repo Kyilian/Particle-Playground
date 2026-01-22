@@ -12,6 +12,7 @@ pub struct World {
     pub colliders: Vec<CircleCollider>,
     pub particle_radius: f32,
     pub restitution: f32,
+    pub fps: f32,
 }
 
 impl Default for World {
@@ -28,6 +29,7 @@ impl World {
             colliders: Vec::new(),
             particle_radius: DEFAULT_PARTICLE_RADIUS,
             restitution: DEFAULT_RESTITUTION,
+            fps: 0.0,
         }
     }
 
@@ -257,6 +259,10 @@ impl World {
 
     pub fn clear_particles(&mut self) {
         self.particles.clear()
+    }
+
+    pub fn clear_collider(&mut self) {
+        self.colliders.clear();
     }
 
     // funktion für nearest neighbour search
