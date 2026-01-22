@@ -264,7 +264,7 @@ impl World {
         self.particles.clear()
     }
 
-    pub fn clear_collider(&mut self){
+    pub fn clear_collider(&mut self) {
         self.colliders.clear();
     }
 

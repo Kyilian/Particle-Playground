@@ -1,6 +1,6 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{Particle, World, CircleCollider};
+use pp_physics::{CircleCollider, Particle, World};
 use pp_render::{ParticleRenderer, RenderContext};
 use rand::prelude::*;
 
@@ -14,8 +14,6 @@ pub struct FallingParticles {
     color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
-
-    fps: f32,
 }
 
 impl FallingParticles {
@@ -27,7 +25,6 @@ impl FallingParticles {
             particle_radius: 2.0,
             collider_radius: 250.0,
             collider_old: 250.0,
-            fps: 60.0,
         }
     }
 }
@@ -44,17 +41,16 @@ impl Scene for FallingParticles {
         _world.gravity = Vec2::new(0.0, self.gravity);
         _world.step(_dt);
 
-        if self.collider_radius != self.collider_old{
+        if self.collider_radius != self.collider_old {
             _world.clear_collider();
             _world.add_circle_collider(CircleCollider {
-            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
-            radius: self.collider_radius,
-             });
-             self.collider_old = self.collider_radius;
-
+                center: Vec2::new(0.0, 0.0), // (0,0) is now the center
+                radius: self.collider_radius,
+            });
+            self.collider_old = self.collider_radius;
         }
 
-        _world.particle_radius= self.particle_radius;
+        _world.particle_radius = self.particle_radius;
     }
 
     //call to the render function
@@ -125,7 +121,6 @@ impl Scene for FallingParticles {
         self.gravity = 9.81;
         _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
     }
-    
 
     //Basic UI to test Sliders and Buttos
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut World) {
@@ -133,15 +128,15 @@ impl Scene for FallingParticles {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 
-                let color = if _world.fps < 30.0 { 
-                    egui::Color32::RED 
-                } else { 
-                    egui::Color32::GREEN 
+                let color = if _world.fps < 30.0 {
+                    egui::Color32::RED
+                } else {
+                    egui::Color32::GREEN
                 };
-                
+
                 ui.colored_label(color, format!("{:.1}", _world.fps));
             });
-            
+
             ui.separator();
             ui.label("Test Parameter");
 
@@ -159,7 +154,6 @@ impl Scene for FallingParticles {
             if ui.button("Alles zurücksetzen").clicked() {
                 self.reset(_world);
             }
-    
         });
     }
 }

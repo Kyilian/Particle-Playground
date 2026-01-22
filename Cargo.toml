@@ -4,8 +4,8 @@ members = ["crates/*","app", "examples/simple_demo"]
 
 [workspace.dependencies]
 #Core und Window handeling
-winit = { version = "0.29.4", default-features = false } #https://github.com/emilk/egui/blob/release-0.28.0/Cargo.toml
-wgpu = { version = "0.20.0", default-features = false, features = [
+winit = { version = "0.29.4", default-features = false} #https://github.com/emilk/egui/blob/release-0.28.0/Cargo.toml
+wgpu = { version = "0.20.0", default-features = true, features = [
     # Make the renderer `Sync` even on wasm32, because it makes the code simpler:
     "fragile-send-sync-non-atomic-wasm",
 ] }
