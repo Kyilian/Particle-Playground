@@ -148,17 +148,18 @@ impl World {
         let min_dist = 2.0 * self.particle_radius;
         let cell_size = min_dist.max(1e-6);
 
-        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
+        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new();  //eine Zelle ist eine Liste von Partikeln
 
-        for (idx, p) in self.particles.iter().enumerate() {
+        for (idx, p) in self.particles.iter().enumerate() {    //ordnet jedem Partikel eine Zelle zu
             let cx = (p.pos.x / cell_size).floor() as i32;
             let cy = (p.pos.y / cell_size).floor() as i32;
             grid.entry((cx, cy)).or_default().push(idx);
         }
 
-        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // doppelchecken vermeiden
+        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)];     // doppelchecken vermeiden
         let mut pairs: Vec<(usize, usize)> = Vec::new();
 
+        //vergelich von Zellen und identifizierne von vergleichs pairs
         for (&cell, indices) in grid.iter() {
             for (dx, dy) in OFFS {
                 let ncell = (cell.0 + dx, cell.1 + dy);
@@ -167,12 +168,12 @@ impl World {
                 };
 
                 if dx == 0 && dy == 0 {
-                    //paar in der gleichen Zelle
+                    //paar in der gleichen Zelle werden in überprüfungsarray pairs gespeichert
                     for a in 0..indices.len() {
                         for b in (a + 1)..indices.len() {
                             let i = indices[a];
                             let j = indices[b];
-                            if i < j {
+                            if i < j {                  // richtige reinfolge um doppelchecks zu vermeiden
                                 pairs.push((i, j));
                             } else {
                                 pairs.push((j, i));
@@ -180,7 +181,7 @@ impl World {
                         }
                     }
                 } else {
-                    //paare zwischen Zelle und Nachbarzelle
+                    //paare zwischen Zelle und Nachbarzelle werden in überprüfungsarray pairs gespeichert
                     for &i in indices {
                         for &j in nindices {
                             if i == j {
@@ -201,7 +202,7 @@ impl World {
         pairs.sort_unstable();
         pairs.dedup();
 
-        //kollisionscode für paare
+        //kollisionsberechnung für paare
 
         let restitution = self.restitution;
 
