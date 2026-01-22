@@ -1,7 +1,7 @@
 use super::Scene;
 use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, RectCollider, World};
-use pp_render::{RenderContext};
+use pp_render::RenderContext;
 use rand::prelude::*;
 
 //Using constant placeholders for window size
@@ -18,7 +18,7 @@ pub struct TestScene {
     fps: f32,
 
     //to add a rect_collider
-    rect_collider_active:bool,
+    rect_collider_active: bool,
     rect_size: Vec2,
     rect_size_old: Vec2,
 }
@@ -35,9 +35,8 @@ impl TestScene {
             fps: 60.0,
 
             rect_collider_active: false,
-            rect_size: Vec2::new(400.0,400.0),
-            rect_size_old: Vec2::new(400.0,400.0),
-
+            rect_size: Vec2::new(400.0, 400.0),
+            rect_size_old: Vec2::new(400.0, 400.0),
         }
     }
 }
@@ -54,28 +53,27 @@ impl Scene for TestScene {
         _world.gravity = Vec2::new(0.0, self.gravity);
         _world.step(_dt);
 
-        if self.collider_radius != self.collider_old && !self.rect_collider_active{
+        if self.collider_radius != self.collider_old && !self.rect_collider_active {
             _world.clear_collider();
             _world.clear_rect_collider();
             _world.add_circle_collider(CircleCollider {
-            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
-            radius: self.collider_radius,
-             });
+                center: Vec2::new(0.0, 0.0), // (0,0) is now the center
+                radius: self.collider_radius,
+            });
 
             self.collider_old = self.collider_radius;
-
         } else if self.rect_size != self.rect_size_old && self.rect_collider_active {
             _world.clear_collider();
             _world.clear_rect_collider();
 
-            _world.add_rect_collider(RectCollider{
+            _world.add_rect_collider(RectCollider {
                 center: Vec2::new(0.0, 0.0),
                 width: self.rect_size.y,
                 height: self.rect_size.x,
             });
         }
 
-        _world.particle_radius= self.particle_radius;
+        _world.particle_radius = self.particle_radius;
     }
 
     //call to the render function
@@ -146,24 +144,22 @@ impl Scene for TestScene {
         self.gravity = 9.81;
         _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
     }
-    
 
     //Basic UI to test Sliders and Buttos
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut World) {
         egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
             ui.horizontal(|ui| {
-                
                 ui.label("FPS:");
 
-                let color = if _world.fps < 30.0 { 
-                    egui::Color32::RED 
-                } else { 
-                    egui::Color32::GREEN 
+                let color = if _world.fps < 30.0 {
+                    egui::Color32::RED
+                } else {
+                    egui::Color32::GREEN
                 };
-                
+
                 ui.colored_label(color, format!("{:.1}", _world.fps));
             });
-            
+
             ui.separator();
             ui.label("Test Parameter");
 
@@ -171,13 +167,20 @@ impl Scene for TestScene {
             ui.separator();
 
             if ui.button("Switch Colliders").clicked() {
-                self.rect_collider_active= !self.rect_collider_active;
+                self.rect_collider_active = !self.rect_collider_active;
             }
-            ui.add(egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Circle Collider"));
+            ui.add(
+                egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Circle Collider"),
+            );
             ui.separator();
 
-            ui.add(egui::Slider::new(&mut self.rect_size.x, 50.0..=1000.0).text("Rect Collider Height"));
-            ui.add(egui::Slider::new(&mut self.rect_size.y, 50.0..=1000.0).text("Rect Collider Width"));
+            ui.add(
+                egui::Slider::new(&mut self.rect_size.x, 50.0..=1000.0)
+                    .text("Rect Collider Height"),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.rect_size.y, 50.0..=1000.0).text("Rect Collider Width"),
+            );
             ui.separator();
 
             ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
@@ -188,7 +191,6 @@ impl Scene for TestScene {
             if ui.button("Alles zurücksetzen").clicked() {
                 self.reset(_world);
             }
-    
         });
     }
 }

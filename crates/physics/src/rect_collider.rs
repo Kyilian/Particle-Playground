@@ -7,8 +7,12 @@ pub struct RectCollider {
     pub height: f32,
 }
 
-impl RectCollider{
+impl RectCollider {
     pub fn new(center: Vec2, width: f32, height: f32) -> Self {
-       return Self {center, width, height};
-    } 
+        return Self {
+            center,
+            width,
+            height,
+        };
+    }
 }

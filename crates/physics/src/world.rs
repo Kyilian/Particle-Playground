@@ -1,4 +1,4 @@
-use crate::{CircleCollider, Particle, RectCollider, rect_collider};
+use crate::{rect_collider, CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 use std::collections::HashMap;
 
@@ -286,19 +286,19 @@ impl World {
         nearest
     }
 
-    pub fn add_rect_collider(&mut self, rc: RectCollider){
+    pub fn add_rect_collider(&mut self, rc: RectCollider) {
         self.rect_colliders.push(rc);
     }
 
-    pub fn clear_rect_collider (&mut self){
+    pub fn clear_rect_collider(&mut self) {
         self.rect_colliders.clear();
     }
 
     pub fn solve_rect_collisions(&mut self) {
         let r = self.particle_radius;
-        let restitution = self.restitution; 
-       
-        let corner_damping = 0.7; 
+        let restitution = self.restitution;
+
+        let corner_damping = 0.7;
 
         for rc in &self.rect_colliders {
             let half_w = rc.width / 2.0;
@@ -313,7 +313,6 @@ impl World {
                 let mut hit_x = false;
                 let mut hit_y = false;
 
-                
                 if p.pos.x + r > max_x {
                     p.pos.x = max_x - r;
                     hit_x = true;
@@ -329,26 +328,24 @@ impl World {
                     p.pos.y = min_y + r;
                     hit_y = true;
                 }
-                
+
                 if hit_x || hit_y {
                     let mut vel = p.pos - p.old_pos;
 
                     if hit_x && hit_y {
- 
                         vel.x = -vel.x;
                         vel.y = -vel.y;
 
-                        vel *= corner_damping; 
+                        vel *= corner_damping;
 
                         //random direction bounce so it dont get stuck in a corner
-                        let noise = (p.pos.x + p.pos.y).sin() * 0.1; 
-                        vel.x += noise; 
-                        
+                        let noise = (p.pos.x + p.pos.y).sin() * 0.1;
+                        vel.x += noise;
                     } else {
                         //normal wall collide logic
                         if hit_x {
                             vel.x = -vel.x * restitution;
-                            vel.y *= 0.99; 
+                            vel.y *= 0.99;
                         }
                         if hit_y {
                             vel.y = -vel.y * restitution;
@@ -362,25 +359,7 @@ impl World {
             }
         }
     }
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[cfg(test)]
 mod test {
@@ -650,5 +629,101 @@ mod test {
             let d = (w1.particles[i].pos - w2.particles[i].pos).length();
             assert!(d < 1e-5, "Mismatch at {}: d={}", i, d);
         }
+    }
+}
+
+//Gemini Unit Tests
+
+#[cfg(test)]
+mod test_rectcolider {
+    use super::*;
+    use glam::Vec2;
+
+    // Helper to create a standard test world with a 100x100 box
+    fn setup_world_with_rect() -> World {
+        let mut world = World::new();
+        // Box from -50 to +50 on X and Y
+        world.add_rect_collider(RectCollider {
+            center: Vec2::ZERO,
+            width: 100.0,
+            height: 100.0,
+        });
+        // Set standard radius for predictable math (e.g., 5.0)
+        world.particle_radius = 5.0;
+        world.restitution = 1.0; // Perfect elasticity for easier math checks
+        world
+    }
+
+    #[test]
+    fn test_rect_containment() {
+        let mut world = setup_world_with_rect();
+
+        // Spawn particle WAY outside (X=100, Y=100)
+        // Max bounds are 50.0. Minus radius 5.0 = 45.0 is the limit.
+        let mut p = Particle::new(Vec2::new(100.0, 100.0));
+        p.old_pos = Vec2::new(100.0, 100.0); // No velocity
+
+        world.add_particle(p);
+        world.solve_rect_collisions();
+
+        let p_after = world.particles[0];
+
+        // Should be clamped exactly to max_x - radius
+        assert_eq!(
+            p_after.pos.x, 45.0,
+            "Particle X was not clamped to boundary"
+        );
+        assert_eq!(
+            p_after.pos.y, 45.0,
+            "Particle Y was not clamped to boundary"
+        );
+    }
+
+    #[test]
+    fn test_rect_wall_bounce_x() {
+        let mut world = setup_world_with_rect();
+
+        // Max X bound is 50.0. Limit is 45.0.
+        // Place particle at 46.0 (1.0 pixel inside the wall)
+        // Moving Right: old_pos at 40.0 (Velocity +6)
+        let mut p = Particle::new(Vec2::new(46.0, 0.0));
+        p.old_pos = Vec2::new(40.0, 0.0);
+
+        world.add_particle(p);
+        world.solve_rect_collisions();
+
+        let p_after = world.particles[0];
+
+        // 1. Position should be clamped
+        assert_eq!(p_after.pos.x, 45.0);
+
+        // 2. Velocity should be inverted (pointing Left)
+        // Current Pos (45) < Old Pos implies velocity is negative (moving left)
+        assert!(p_after.pos.x < p_after.old_pos.x, "Velocity X did not flip");
+
+        // 3. Y velocity should remain roughly unchanged (0.0)
+        let vel_y = p_after.pos.y - p_after.old_pos.y;
+        assert!(
+            vel_y.abs() < 0.001,
+            "Velocity Y should not change on vertical wall hit"
+        );
+    }
+
+    #[test]
+    fn test_rect_wall_bounce_y() {
+        let mut world = setup_world_with_rect();
+
+        // Hitting Top/Bottom wall (Y axis)
+        // Place at Y = 46.0
+        let mut p = Particle::new(Vec2::new(0.0, 46.0));
+        p.old_pos = Vec2::new(0.0, 40.0); // Moving Up
+
+        world.add_particle(p);
+        world.solve_rect_collisions();
+
+        let p_after = world.particles[0];
+
+        assert_eq!(p_after.pos.y, 45.0); // Clamped
+        assert!(p_after.pos.y < p_after.old_pos.y, "Velocity Y did not flip");
     }
 }
