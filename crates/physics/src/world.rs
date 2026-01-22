@@ -1,4 +1,4 @@
-use crate::{CircleCollider, Particle};
+use crate::{CircleCollider, Particle, RectCollider, rect_collider};
 use glam::Vec2;
 use std::collections::HashMap;
 
@@ -12,7 +12,8 @@ pub struct World {
     pub colliders: Vec<CircleCollider>,
     pub particle_radius: f32,
     pub restitution: f32,
-    pub fps: f32
+    pub fps: f32,
+    pub rect_colliders: Vec<RectCollider>,
 }
 
 impl Default for World {
@@ -30,6 +31,7 @@ impl World {
             particle_radius: DEFAULT_PARTICLE_RADIUS,
             restitution: DEFAULT_RESTITUTION,
             fps: 0.0,
+            rect_colliders: Vec::new(),
         }
     }
 
@@ -248,6 +250,7 @@ impl World {
         self.solve_collisions();
         // self.solve_particle_collisions();
         self.solve_particle_collisions_grid();
+        self.solve_rect_collisions();
     }
 
     //resets all particles
@@ -282,7 +285,102 @@ impl World {
         }
         nearest
     }
+
+    pub fn add_rect_collider(&mut self, rc: RectCollider){
+        self.rect_colliders.push(rc);
+    }
+
+    pub fn clear_rect_collider (&mut self){
+        self.rect_colliders.clear();
+    }
+
+    pub fn solve_rect_collisions(&mut self) {
+        let r = self.particle_radius;
+        let restitution = self.restitution; 
+       
+        let corner_damping = 0.7; 
+
+        for rc in &self.rect_colliders {
+            let half_w = rc.width / 2.0;
+            let half_h = rc.height / 2.0;
+
+            let min_x = rc.center.x - half_w;
+            let max_x = rc.center.x + half_w;
+            let min_y = rc.center.y - half_h;
+            let max_y = rc.center.y + half_h;
+
+            for p in &mut self.particles {
+                let mut hit_x = false;
+                let mut hit_y = false;
+
+                
+                if p.pos.x + r > max_x {
+                    p.pos.x = max_x - r;
+                    hit_x = true;
+                } else if p.pos.x - r < min_x {
+                    p.pos.x = min_x + r;
+                    hit_x = true;
+                }
+
+                if p.pos.y + r > max_y {
+                    p.pos.y = max_y - r;
+                    hit_y = true;
+                } else if p.pos.y - r < min_y {
+                    p.pos.y = min_y + r;
+                    hit_y = true;
+                }
+                
+                if hit_x || hit_y {
+                    let mut vel = p.pos - p.old_pos;
+
+                    if hit_x && hit_y {
+ 
+                        vel.x = -vel.x;
+                        vel.y = -vel.y;
+
+                        vel *= corner_damping; 
+
+                        //random direction bounce so it dont get stuck in a corner
+                        let noise = (p.pos.x + p.pos.y).sin() * 0.1; 
+                        vel.x += noise; 
+                        
+                    } else {
+                        //normal wall collide logic
+                        if hit_x {
+                            vel.x = -vel.x * restitution;
+                            vel.y *= 0.99; 
+                        }
+                        if hit_y {
+                            vel.y = -vel.y * restitution;
+                            vel.x *= 0.99;
+                        }
+                    }
+
+                    // Verlet-Update anwenden
+                    p.old_pos = p.pos - vel;
+                }
+            }
+        }
+    }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #[cfg(test)]
 mod test {
