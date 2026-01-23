@@ -148,15 +148,16 @@ impl World {
         let min_dist = 2.0 * self.particle_radius;
         let cell_size = min_dist.max(1e-6);
 
-        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new();  //eine Zelle ist eine Liste von Partikeln
+        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
 
-        for (idx, p) in self.particles.iter().enumerate() {    //ordnet jedem Partikel eine Zelle zu
+        for (idx, p) in self.particles.iter().enumerate() {
+            //ordnet jedem Partikel eine Zelle zu
             let cx = (p.pos.x / cell_size).floor() as i32;
             let cy = (p.pos.y / cell_size).floor() as i32;
             grid.entry((cx, cy)).or_default().push(idx);
         }
 
-        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)];     // doppelchecken vermeiden
+        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // doppelchecken vermeiden
         let mut pairs: Vec<(usize, usize)> = Vec::new();
 
         //vergelich von Zellen und identifizierne von vergleichs pairs
@@ -173,7 +174,8 @@ impl World {
                         for b in (a + 1)..indices.len() {
                             let i = indices[a];
                             let j = indices[b];
-                            if i < j {                  // richtige reinfolge um doppelchecks zu vermeiden
+                            if i < j {
+                                // richtige reinfolge um doppelchecks zu vermeiden
                                 pairs.push((i, j));
                             } else {
                                 pairs.push((j, i));
