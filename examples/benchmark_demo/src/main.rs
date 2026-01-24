@@ -10,4 +10,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     RenderWindow::run(start_scene)
 }
- 

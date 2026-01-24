@@ -266,7 +266,7 @@ impl ParticleRenderer {
         });
 
         // Instance Buffer, wird für jeden Frame aktualisiert
-        let max_particles = 30000; //for now max particles is fixed, could be changed later
+        let max_particles = 100000; //for now max particles is fixed, could be changed later
         let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Instance Buffer"),
             size: (max_particles * std::mem::size_of::<ParticleInstance>() as u32) as u64,
