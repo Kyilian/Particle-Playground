@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*","app", "examples/simple_demo"]
+members = ["crates/*","app", "examples/*"]
 
 [workspace.dependencies]
 #Core und Window handeling
