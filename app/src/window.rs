@@ -1,6 +1,7 @@
-use egui;
 use glam::Vec2;
+
 use pp_physics::World;
+
 use pp_render::{ParticleRenderer, RenderContext};
 use pp_scenes::{Scene, SceneType};
 use std::sync::Arc; //Arc for dual ownership
@@ -48,7 +49,6 @@ impl RenderWindow {
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
-        let mut fps: f32 = 0.0;
 
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();

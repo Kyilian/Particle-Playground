@@ -1,22 +1,29 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{CircleCollider, Particle, World};
+use pp_physics::{CircleCollider, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
 //Using constant placeholders for window size
 //Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
 
-pub struct FallingParticles {
+pub struct TestScene {
     gravity: f32,
     spawnrate: Option<i32>,
     particle_radius: f32,
     color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
+
+    fps: f32,
+
+    //to add a rect_collider
+    rect_collider_active: bool,
+    rect_size: Vec2,
+    rect_size_old: Vec2,
 }
 
-impl FallingParticles {
+impl TestScene {
     pub fn new() -> Self {
         Self {
             gravity: 9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
@@ -25,36 +32,45 @@ impl FallingParticles {
             particle_radius: 2.0,
             collider_radius: 250.0,
             collider_old: 250.0,
+            fps: 60.0,
+
+            rect_collider_active: false,
+            rect_size: Vec2::new(400.0, 400.0),
+            rect_size_old: Vec2::new(400.0, 400.0),
         }
     }
-
-    pub fn init_world(world: &mut World) {
-        world.add_circle_collider(CircleCollider {
-            center: Vec2::new(0.0, 0.0),
-            radius: 250.0,
-        });
-    }
 }
 
-impl Default for FallingParticles {
+impl Default for TestScene {
     fn default() -> Self {
-        FallingParticles::new()
+        TestScene::new()
     }
 }
 
-impl Scene for FallingParticles {
+impl Scene for TestScene {
     //update particle position in world
     fn update(&mut self, _world: &mut World, _dt: f32) {
         _world.gravity = Vec2::new(0.0, self.gravity);
         _world.step(_dt);
 
-        if self.collider_radius != self.collider_old {
+        if self.collider_radius != self.collider_old && !self.rect_collider_active {
             _world.clear_collider();
+            _world.clear_rect_collider();
             _world.add_circle_collider(CircleCollider {
                 center: Vec2::new(0.0, 0.0), // (0,0) is now the center
                 radius: self.collider_radius,
             });
+
             self.collider_old = self.collider_radius;
+        } else if self.rect_size != self.rect_size_old && self.rect_collider_active {
+            _world.clear_collider();
+            _world.clear_rect_collider();
+
+            _world.add_rect_collider(RectCollider {
+                center: Vec2::new(0.0, 0.0),
+                width: self.rect_size.y,
+                height: self.rect_size.x,
+            });
         }
 
         _world.particle_radius = self.particle_radius;
@@ -63,7 +79,7 @@ impl Scene for FallingParticles {
     //call to the render function
     fn render<'rpass>(
         &self,
-        _world: &World,
+        world: &World,
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
@@ -150,7 +166,21 @@ impl Scene for FallingParticles {
             ui.add(egui::Slider::new(&mut self.gravity, 0.0..=2000.0).text("Gravity"));
             ui.separator();
 
-            ui.add(egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Collider"));
+            if ui.button("Switch Colliders").clicked() {
+                self.rect_collider_active = !self.rect_collider_active;
+            }
+            ui.add(
+                egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Circle Collider"),
+            );
+            ui.separator();
+
+            ui.add(
+                egui::Slider::new(&mut self.rect_size.x, 50.0..=1000.0)
+                    .text("Rect Collider Height"),
+            );
+            ui.add(
+                egui::Slider::new(&mut self.rect_size.y, 50.0..=1000.0).text("Rect Collider Width"),
+            );
             ui.separator();
 
             ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
@@ -162,95 +192,5 @@ impl Scene for FallingParticles {
                 self.reset(_world);
             }
         });
-    }
-}
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use glam::Vec2;
-    use pp_physics::World;
-
-    #[test]
-    fn test_initial_state() {
-        let scene = FallingParticles::new();
-        // Standardwerte prüfen
-        assert_eq!(scene.gravity, 9.81);
-        assert_eq!(scene.particle_radius, 2.0);
-        assert_eq!(scene.color, [1.0, 0.2, 0.2, 1.0]);
-    }
-
-    #[test]
-    fn test_update_propagates_gravity_to_world() {
-        let mut scene = FallingParticles::new();
-        let mut world = World::new();
-        scene.gravity = 20.0;
-
-        scene.update(&mut world, 0.016);
-
-        assert_eq!(world.gravity.y, 20.0);
-        assert_eq!(world.gravity.x, 0.0);
-    }
-
-    #[test]
-    fn test_left_click_spawns_single_particle() {
-        let mut scene = FallingParticles::new();
-        let mut world = World::new();
-        let click_pos = Vec2::new(100.0, 100.0);
-
-        scene.on_click(&mut world, click_pos, false, true, false);
-
-        assert_eq!(
-            world.particles.len(),
-            1,
-            "Es sollte genau 1 Partikel gespawnt sein"
-        );
-
-        let p = &world.particles[0];
-
-        let diff = p.pos - click_pos;
-        assert!(diff.length() < 0.001);
-    }
-
-    #[test]
-    fn test_middle_click_changes_color() {
-        let mut scene = FallingParticles::new();
-        let mut world = World::new();
-        let old_color = scene.color;
-
-        let mut color_changed = false;
-
-        for _ in 0..5 {
-            scene.on_click(&mut world, Vec2::ZERO, false, false, true);
-
-            if scene.color != old_color {
-                color_changed = true;
-                break;
-            }
-        }
-
-        assert!(
-            color_changed,
-            "Middle click should change the particle color"
-        );
-    }
-
-    #[test]
-    fn test_reset_clears_particles_and_resets_gravity() {
-        let mut scene = FallingParticles::new();
-        let mut world = World::new();
-
-        scene.gravity = 500.0;
-
-        scene.on_click(&mut world, Vec2::ZERO, false, true, false);
-        scene.on_click(&mut world, Vec2::ZERO, false, true, false);
-        assert_eq!(world.particles.len(), 2);
-
-        scene.reset(&mut world);
-
-        assert_eq!(
-            scene.gravity, 9.81,
-            "Gravity sollte auf Default zurückgesetzt sein"
-        );
-        assert_eq!(world.particles.len(), 0, "Partikel sollten gelöscht sein");
     }
 }

@@ -2519,6 +2519,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pp_app"
+version = "0.1.0"
+dependencies = [
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "env_logger",
+ "glam",
+ "log",
+ "pollster",
+ "pp_common",
+ "pp_gui",
+ "pp_input",
+ "pp_physics",
+ "pp_render",
+ "pp_scenes",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "pp_common"
 version = "0.1.0"
 dependencies = [
@@ -2689,6 +2710,12 @@ checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.16",
 ]
+
+[[package]]
+name = "range-alloc"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
 
 [[package]]
 name = "raw-window-handle"
@@ -2933,6 +2960,24 @@ checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 [[package]]
 name = "simple_demo"
 version = "0.1.0"
+dependencies = [
+ "egui",
+ "egui-wgpu",
+ "egui-winit",
+ "env_logger",
+ "glam",
+ "log",
+ "pollster",
+ "pp_app",
+ "pp_common",
+ "pp_gui",
+ "pp_input",
+ "pp_physics",
+ "pp_render",
+ "pp_scenes",
+ "wgpu",
+ "winit",
+]
 
 [[package]]
 name = "slab"
@@ -3656,6 +3701,7 @@ dependencies = [
  "document-features",
  "js-sys",
  "log",
+ "naga",
  "parking_lot",
  "profiling",
  "raw-window-handle 0.6.2",
@@ -3705,9 +3751,12 @@ dependencies = [
  "android_system_properties",
  "arrayvec",
  "ash",
+ "bit-set",
  "bitflags 2.10.0",
+ "block",
  "cfg_aliases",
  "core-graphics-types",
+ "d3d12",
  "glow",
  "glutin_wgl_sys",
  "gpu-alloc",
@@ -3726,7 +3775,8 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "profiling",
- "raw-window-handle 0.6.2",
+ "range-alloc",
+ "raw-window-handle",
  "renderdoc-sys",
  "rustc-hash 1.1.0",
  "smallvec",

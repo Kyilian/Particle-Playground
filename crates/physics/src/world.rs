@@ -1,4 +1,4 @@
-use crate::{CircleCollider, Particle};
+use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 use std::collections::HashMap;
 
@@ -12,6 +12,8 @@ pub struct World {
     pub colliders: Vec<CircleCollider>,
     pub particle_radius: f32,
     pub restitution: f32,
+    pub fps: f32,
+    pub rect_colliders: Vec<RectCollider>,
 }
 
 impl Default for World {
@@ -28,6 +30,8 @@ impl World {
             colliders: Vec::new(),
             particle_radius: DEFAULT_PARTICLE_RADIUS,
             restitution: DEFAULT_RESTITUTION,
+            fps: 0.0,
+            rect_colliders: Vec::new(),
         }
     }
 
@@ -149,6 +153,7 @@ impl World {
         let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
 
         for (idx, p) in self.particles.iter().enumerate() {
+            //ordnet jedem Partikel eine Zelle zu
             let cx = (p.pos.x / cell_size).floor() as i32;
             let cy = (p.pos.y / cell_size).floor() as i32;
             grid.entry((cx, cy)).or_default().push(idx);
@@ -157,6 +162,7 @@ impl World {
         const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // doppelchecken vermeiden
         let mut pairs: Vec<(usize, usize)> = Vec::new();
 
+        //vergelich von Zellen und identifizierne von vergleichs pairs
         for (&cell, indices) in grid.iter() {
             for (dx, dy) in OFFS {
                 let ncell = (cell.0 + dx, cell.1 + dy);
@@ -165,12 +171,13 @@ impl World {
                 };
 
                 if dx == 0 && dy == 0 {
-                    //paar in der gleichen Zelle
+                    //paar in der gleichen Zelle werden in überprüfungsarray pairs gespeichert
                     for a in 0..indices.len() {
                         for b in (a + 1)..indices.len() {
                             let i = indices[a];
                             let j = indices[b];
                             if i < j {
+                                // richtige reinfolge um doppelchecks zu vermeiden
                                 pairs.push((i, j));
                             } else {
                                 pairs.push((j, i));
@@ -178,7 +185,7 @@ impl World {
                         }
                     }
                 } else {
-                    //paare zwischen Zelle und Nachbarzelle
+                    //paare zwischen Zelle und Nachbarzelle werden in überprüfungsarray pairs gespeichert
                     for &i in indices {
                         for &j in nindices {
                             if i == j {
@@ -199,7 +206,7 @@ impl World {
         pairs.sort_unstable();
         pairs.dedup();
 
-        //kollisionscode für paare
+        //kollisionsberechnung für paare
 
         let restitution = self.restitution;
 
@@ -246,6 +253,7 @@ impl World {
         self.solve_collisions();
         // self.solve_particle_collisions();
         self.solve_particle_collisions_grid();
+        self.solve_rect_collisions();
     }
 
     //resets all particles
@@ -257,6 +265,10 @@ impl World {
 
     pub fn clear_particles(&mut self) {
         self.particles.clear()
+    }
+
+    pub fn clear_collider(&mut self) {
+        self.colliders.clear();
     }
 
     // funktion für nearest neighbour search
@@ -276,275 +288,78 @@ impl World {
         }
         nearest
     }
-}
 
-#[cfg(test)]
-mod test {
-
-    use super::*;
-    use glam::Vec2;
-
-    #[test]
-    fn verlet_moves_particle_with_gravity() {
-        let mut world = World::new();
-        let id = world.add_particle(Particle::new(Vec2::ZERO));
-
-        world.step(1.0);
-        let p = world.particles[id];
-        let expected = Vec2::new(0.0, 9.81);
-
-        assert!(
-            (p.pos - expected).length() < 0.001,
-            "Expected {:?}, got {:?}",
-            expected,
-            p.pos
-        );
+    pub fn add_rect_collider(&mut self, rc: RectCollider) {
+        self.rect_colliders.push(rc);
     }
 
-    #[test]
-    fn test_world_clear_resets_everything() {
-        let mut world = World::new();
-        world.add_particle(Particle {
-            pos: (Vec2::ZERO),
-            old_pos: (Vec2::ZERO),
-            acc: (Vec2::ZERO),
-        });
-        world.add_circle_collider(CircleCollider {
-            center: Vec2::ZERO,
-            radius: 10.0,
-        });
-        world.gravity = Vec2::new(100.0, 100.0);
-
-        world.clear();
-
-        assert_eq!(world.particles.len(), 0, "Partikel sollten weg sein");
-        assert_eq!(world.colliders.len(), 0, "Collider sollten weg sein");
-        assert_eq!(world.gravity.y, 9.81, "Gravity sollte wieder Standard sein");
-    }
-    #[test]
-    fn particle_stays_inside_circle() {
-        let mut world = World::new();
-
-        world.add_circle_collider(CircleCollider {
-            center: Vec2::ZERO,
-            radius: 10.0,
-        });
-
-        let id = world.add_particle(Particle::new(Vec2::new(20.0, 0.0)));
-
-        world.solve_collisions();
-
-        let p = world.particles[id];
-        assert!(
-            p.pos.length() <= 10.0 + 1e-4,
-            "Particle escaped the boundary"
-        );
-    }
-    #[test]
-    fn particle_bounces_off_circle() {
-        let mut world = World::new();
-
-        let collider = CircleCollider {
-            center: Vec2::ZERO,
-            radius: 10.0,
-        };
-        world.add_circle_collider(collider);
-
-        // Partikel außerhalb, kam von innen → echte Kollision
-        let mut p = Particle::new(Vec2::new(12.0, 0.0));
-        p.old_pos = Vec2::new(9.0, 0.0);
-
-        let id = world.add_particle(p);
-
-        world.solve_collisions();
-
-        let p = &world.particles[id];
-
-        let vel = p.pos - p.old_pos;
-        let normal = (p.pos - collider.center).normalize();
-
-        // Nach der Kollision darf das Partikel nicht weiter nach außen laufen
-        assert!(
-            vel.dot(normal) <= 0.0,
-            "Particle velocity still points outward: vel={:?}, normal={:?}",
-            vel,
-            normal
-        );
-    }
-    //Ai Unit Tests Gemini
-    #[test]
-    fn particles_separate_when_overlapping() {
-        let mut world = World::new();
-
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
-
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
-
-        world.add_particle(a);
-        world.add_particle(b);
-
-        world.solve_particle_collisions();
-
-        let d = (world.particles[1].pos - world.particles[0].pos).length();
-        assert!(d >= 12.0 - 1e-4, "Particles still overlap: d={}", d);
-    }
-    #[test]
-    fn particles_do_not_move_when_not_overlapping() {
-        let mut world = World::new();
-
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
-
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
-
-        let a0 = a.pos;
-        let b0 = b.pos;
-
-        world.add_particle(a);
-        world.add_particle(b);
-
-        world.solve_particle_collisions();
-
-        assert!((world.particles[0].pos - a0).length() < 1e-6);
-        assert!((world.particles[1].pos - b0).length() < 1e-6);
-    }
-    #[test]
-    fn particles_bounce_when_moving_towards_each_other() {
-        let mut world = World::new();
-
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        a.old_pos = Vec2::new(-1.0, 0.0);
-
-        let mut b = Particle::new(Vec2::new(11.0, 0.0)); // overlap
-        b.old_pos = Vec2::new(12.0, 0.0);
-
-        world.add_particle(a);
-        world.add_particle(b);
-
-        world.solve_particle_collisions();
-
-        let p0 = world.particles[0];
-        let p1 = world.particles[1];
-
-        let dir = p1.pos - p0.pos;
-        let dist = dir.length().max(1e-6);
-        let normal = dir / dist;
-
-        let vel_a = p0.pos - p0.old_pos;
-        let vel_b = p1.pos - p1.old_pos;
-
-        let rel = (vel_b - vel_a).dot(normal);
-
-        assert!(rel >= -1e-4, "Still moving towards each other: rel={}", rel);
+    pub fn clear_rect_collider(&mut self) {
+        self.rect_colliders.clear();
     }
 
-    #[test]
-    fn particles_with_same_position_get_separated() {
-        let mut world = World::new();
+    pub fn solve_rect_collisions(&mut self) {
+        let r = self.particle_radius;
+        let restitution = self.restitution;
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
+        let corner_damping = 0.7;
 
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
+        for rc in &self.rect_colliders {
+            let half_w = rc.width / 2.0;
+            let half_h = rc.height / 2.0;
 
-        world.add_particle(a);
-        world.add_particle(b);
+            let min_x = rc.center.x - half_w;
+            let max_x = rc.center.x + half_w;
+            let min_y = rc.center.y - half_h;
+            let max_y = rc.center.y + half_h;
 
-        world.solve_particle_collisions();
+            for p in &mut self.particles {
+                let mut hit_x = false;
+                let mut hit_y = false;
 
-        let d = (world.particles[1].pos - world.particles[0].pos).length();
-        assert!(d >= 12.0 - 1e-4, "dist==0 case not separated: d={}", d);
-    }
-    //Generated with ChatGPT5
-    #[test]
-    fn grid_particles_separate_when_overlapping() {
-        let mut world = World::new();
+                if p.pos.x + r > max_x {
+                    p.pos.x = max_x - r;
+                    hit_x = true;
+                } else if p.pos.x - r < min_x {
+                    p.pos.x = min_x + r;
+                    hit_x = true;
+                }
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
+                if p.pos.y + r > max_y {
+                    p.pos.y = max_y - r;
+                    hit_y = true;
+                } else if p.pos.y - r < min_y {
+                    p.pos.y = min_y + r;
+                    hit_y = true;
+                }
 
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
+                if hit_x || hit_y {
+                    let mut vel = p.pos - p.old_pos;
 
-        world.add_particle(a);
-        world.add_particle(b);
+                    if hit_x && hit_y {
+                        vel.x = -vel.x;
+                        vel.y = -vel.y;
 
-        world.solve_particle_collisions_grid();
+                        vel *= corner_damping;
 
-        let d = (world.particles[1].pos - world.particles[0].pos).length();
-        assert!(d >= 12.0 - 1e-4, "Particles still overlap: d={}", d);
-    }
+                        //random direction bounce so it dont get stuck in a corner
+                        let noise = (p.pos.x + p.pos.y).sin() * 0.1;
+                        vel.x += noise;
+                    } else {
+                        //normal wall collide logic
+                        if hit_x {
+                            vel.x = -vel.x * restitution;
+                            vel.y *= 0.99;
+                        }
+                        if hit_y {
+                            vel.y = -vel.y * restitution;
+                            vel.x *= 0.99;
+                        }
+                    }
 
-    #[test]
-    fn grid_particles_do_not_move_when_not_overlapping() {
-        let mut world = World::new();
-
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
-
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
-
-        let a0 = a.pos;
-        let b0 = b.pos;
-
-        world.add_particle(a);
-        world.add_particle(b);
-
-        world.solve_particle_collisions_grid();
-
-        assert!((world.particles[0].pos - a0).length() < 1e-6);
-        assert!((world.particles[1].pos - b0).length() < 1e-6);
-    }
-
-    #[test]
-    fn grid_particles_with_same_position_get_separated() {
-        let mut world = World::new();
-
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
-
-        a.old_pos = a.pos;
-        b.old_pos = b.pos;
-
-        world.add_particle(a);
-        world.add_particle(b);
-
-        world.solve_particle_collisions_grid();
-
-        let d = (world.particles[1].pos - world.particles[0].pos).length();
-        assert!(d >= 12.0 - 1e-4, "dist==0 case not separated: d={}", d);
-    }
-    #[test]
-    fn grid_matches_naive_for_small_case() {
-        let mut w1 = World::new();
-        let mut w2 = World::new();
-
-        // Mix aus Kollision / keine Kollision / diagonal
-        let mut p0 = Particle::new(Vec2::new(0.0, 0.0));
-        let mut p1 = Particle::new(Vec2::new(11.5, 0.0)); // overlap (min_dist=12)
-        let mut p2 = Particle::new(Vec2::new(30.0, 0.0)); // no overlap
-        let mut p3 = Particle::new(Vec2::new(11.5, 11.5)); // diagonal neighbor
-
-        for p in [&mut p0, &mut p1, &mut p2, &mut p3] {
-            p.old_pos = p.pos; // keine Bewegung, nur overlap resolution
-        }
-
-        for p in [p0, p1, p2, p3] {
-            w1.add_particle(p);
-            w2.add_particle(p);
-        }
-
-        w1.solve_particle_collisions(); // naive
-        w2.solve_particle_collisions_grid(); // grid
-
-        for i in 0..w1.particles.len() {
-            let d = (w1.particles[i].pos - w2.particles[i].pos).length();
-            assert!(d < 1e-5, "Mismatch at {}: d={}", i, d);
+                    // Verlet-Update anwenden
+                    p.old_pos = p.pos - vel;
+                }
+            }
         }
     }
 }

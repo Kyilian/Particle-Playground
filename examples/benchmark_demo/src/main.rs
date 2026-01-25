@@ -1,10 +1,10 @@
 use pp_app::window::RenderWindow;
 
+use pp_scenes::benchmark_scene::BenchmarkScene;
 use pp_scenes::falling_particles::FallingParticles;
-use pp_scenes::test_scene::TestScene;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let start_scene = Box::new(TestScene::new());
+    let start_scene = Box::new(BenchmarkScene::new());
 
     println!("Starte Particle Playground...");
 
