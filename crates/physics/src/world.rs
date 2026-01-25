@@ -362,4 +362,32 @@ impl World {
             }
         }
     }
+
+    //simple O(n^2) gravity apply, maybe use Barnes Hut later
+    //Gravity for N-Body Scene
+    pub fn apply_gravity(&mut self) {
+        let g = 0.5; // Variable to apply force
+        let softening = 0.5; //to prevent bounce effect
+
+        let n = self.particles.len();
+
+        for i in 0..n {
+            for j in 0..n {
+                if i == j {
+                    continue;
+                }
+
+                let pos_i: Vec2 = self.particles[i].pos;
+                let pos_j: Vec2 = self.particles[j].pos;
+
+                let direction = pos_j - pos_i;
+
+                let force_magnetute = g / (direction.length_squared() + softening);
+
+                let force_direction = direction.normalize_or_zero();
+
+                self.particles[i].acc += force_direction * force_magnetute;
+            }
+        }
+    }
 }

@@ -5,23 +5,6 @@ edition = "2024"
 
 [dependencies]
 # Eigene Crates
-pp_physics = { workspace = true }
-pp_render = { workspace = true }
 pp_scenes = { workspace = true }
-pp_input = { workspace = true }
-pp_gui = { workspace = true }
-pp_common = { workspace = true }
 pp_app = {workspace = true}
-
-
-# Externe Tools
-winit = { workspace = true }
-wgpu = { workspace = true }
-log = { workspace = true }
-env_logger = { workspace = true }
-glam = { workspace = true }
-pollster = { workspace = true }
-egui = { workspace = true }
-egui-wgpu = { workspace = true }
-egui-winit = { workspace = true }
 
