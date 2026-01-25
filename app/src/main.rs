@@ -1,12 +1,13 @@
 mod window;
 
-use pp_scenes::falling_particles::FallingParticles;
 use window::RenderWindow;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let start_scene = Box::new(FallingParticles::new());
+    env_logger::init();
 
-    println!("Starte Particle Playground...");
+    println!("Starting particle playground...");
 
-    RenderWindow::run(start_scene)
+    RenderWindow::run()?;
+
+    Ok(())
 }
