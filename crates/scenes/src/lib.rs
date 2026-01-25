@@ -1,8 +1,11 @@
 pub mod falling_particles;
 pub mod scenes;
 pub mod test_scene;
+pub mod benchmark_scene;
 
 pub use falling_particles::FallingParticles;
+pub use benchmark_scene::BenchmarkScene;
+pub use test_scene::TestScene;
 pub use scenes::Scene;
 
 use pp_physics::World;
@@ -10,7 +13,9 @@ use pp_physics::World;
 //All scene types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SceneType {
-    FallingParticles
+    FallingParticles,
+    BenchmarkScene,
+    TestScene,
     // LiquidSimulation for later
 }
 
@@ -18,7 +23,9 @@ impl SceneType {
     //UI ausgabe von verfügbaren szenen
     pub fn all() -> &'static [SceneType] {
         &[
-            SceneType::FallingParticles
+            SceneType::FallingParticles,
+            SceneType::BenchmarkScene,
+            SceneType::TestScene,
             // SceneType::LiquidSimulation
         ]
     }
@@ -26,13 +33,17 @@ impl SceneType {
     pub fn display_name(&self) -> &'static str {
         match self {
             SceneType::FallingParticles => "Falling Particles",
+            SceneType::BenchmarkScene => "Benchmark Scene",
+            SceneType::TestScene => "Test Scene",
             // SceneType::WaterSimulation => "Water Simulation",
         }
     }
 
     pub fn description(&self) -> &'static str {
         match self {
-            SceneType::FallingParticles => "Particles falling down to customizable gravity"
+            SceneType::FallingParticles => "Particles falling down to customizable gravity",
+            SceneType::BenchmarkScene => "Performance-Test: Spawnt kontinuierlich Partikel bis die FPS unter 30 fallen.",
+            SceneType::TestScene => "Test-Szene mit verschiedenen Collider-Typen (Kreis und Rechteck).",
             // SceneType::LiquidSimulation => TBD
         }
     }
@@ -44,6 +55,14 @@ impl SceneType {
             SceneType::FallingParticles => {
                 FallingParticles::init_world(world);
                 Box::new(FallingParticles::new())
+            }
+            SceneType::BenchmarkScene => {
+                BenchmarkScene::init_world(world);
+                Box::new(BenchmarkScene::new())
+            }
+            SceneType::TestScene => {
+                TestScene::init_world(world);
+                Box::new(TestScene::new())
             }
             // SceneType::LiquidSimulation => {
             //    LiquidSimulation::init_world(world);

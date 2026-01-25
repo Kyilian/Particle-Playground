@@ -884,6 +884,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f27ae1dd37df86211c42e150270f82743308803d90a6f6e6651cd730d5e1732f"
 
 [[package]]
+name = "d3d12"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b28bfe653d79bd16c77f659305b195b82bb5ce0c0eb2a4846b82ddbd77586813"
+dependencies = [
+ "bitflags 2.10.0",
+ "libloading 0.7.4",
+ "winapi",
+]
+
+[[package]]
 name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2383,28 +2394,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "particle-playground-app"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "egui",
- "egui-wgpu",
- "egui-winit",
- "env_logger",
- "glam",
- "log",
- "pollster",
- "pp_common",
- "pp_gui",
- "pp_input",
- "pp_physics",
- "pp_render",
- "pp_scenes",
- "wgpu",
- "winit",
-]
-
-[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2522,6 +2511,7 @@ dependencies = [
 name = "pp_app"
 version = "0.1.0"
 dependencies = [
+ "eframe",
  "egui",
  "egui-wgpu",
  "egui-winit",
@@ -3776,7 +3766,7 @@ dependencies = [
  "parking_lot",
  "profiling",
  "range-alloc",
- "raw-window-handle",
+ "raw-window-handle 0.6.2",
  "renderdoc-sys",
  "rustc-hash 1.1.0",
  "smallvec",

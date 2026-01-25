@@ -49,6 +49,7 @@ impl RenderWindow {
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
+        let mut fps: f32 = 0.0;
 
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
@@ -214,9 +215,6 @@ impl RenderWindow {
 
                     if fps_acc_time >= 0.5 {
                         fps = fps_frames as f32 / fps_acc_time;
-                        if let AppState::Running {world, ..} = &render_window.app_state {
-                            println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
-                        }
                         fps_acc_time = 0.0;
                         fps_frames = 0;
                     }
@@ -226,6 +224,8 @@ impl RenderWindow {
 
                     match &mut render_window.app_state {
                         AppState::Running {scene, world, ..} => {
+                            world.fps = fps;
+
                             while accumulator >= TIME_STEP {
                                 scene.update(world, TIME_STEP);
                                 accumulator -= TIME_STEP;
@@ -235,6 +235,7 @@ impl RenderWindow {
                     }
 
                     if let AppState::Running { world, .. } = &render_window.app_state {
+                        println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
                         render_window.particle_renderer.update_particles(
                             &world.particles,
                             &render_window.queue,

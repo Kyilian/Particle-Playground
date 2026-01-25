@@ -1,7 +1,7 @@
 use super::Scene;
 use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, World};
-use pp_render::{ParticleRenderer, RenderContext};
+use pp_render::RenderContext;
 
 pub struct BenchmarkScene{
     gravity: f32,
@@ -31,6 +31,12 @@ impl BenchmarkScene {
             accum: 0.0,
             speed: 800.0,
         }
+    }
+
+    pub fn init_world(world: &mut World) {
+        world.add_circle_collider(CircleCollider { 
+            center: Vec2::new(0.0, 0.0), 
+            radius: 450.0 });
     }
 
     fn spawn_line(&mut self, world: &mut World, count: usize, dt: f32){
