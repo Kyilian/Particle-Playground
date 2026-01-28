@@ -14,6 +14,9 @@ pub struct World {
     pub restitution: f32,
     pub fps: f32,
     pub rect_colliders: Vec<RectCollider>,
+
+    pub WINDOW_WIDTH: u32,
+    pub WINDOW_HEIGHT: u32,
 }
 
 impl Default for World {
@@ -32,6 +35,8 @@ impl World {
             restitution: DEFAULT_RESTITUTION,
             fps: 0.0,
             rect_colliders: Vec::new(),
+            WINDOW_HEIGHT: 400,
+            WINDOW_WIDTH: 600,
         }
     }
 
@@ -256,6 +261,12 @@ impl World {
         self.solve_rect_collisions();
     }
 
+    pub fn nbody_step(&mut self, dt: f32) {
+        self.apply_gravity();
+        self.update_positions(dt);
+        self.solve_rect_collisions();
+    }
+
     //resets all particles
     pub fn clear(&mut self) {
         self.particles.clear();
@@ -359,6 +370,34 @@ impl World {
                     // Verlet-Update anwenden
                     p.old_pos = p.pos - vel;
                 }
+            }
+        }
+    }
+
+    //simple O(n^2) gravity apply, maybe use Barnes Hut later
+    //Gravity for N-Body Scene
+    pub fn apply_gravity(&mut self) {
+        let g = 4.0; // Variable to apply force
+        let softening = 500.0; //to prevent bounce effect
+
+        let n = self.particles.len();
+
+        for i in 0..n {
+            for j in (i + 1)..n {
+                let (left, right) = self.particles.split_at_mut(j);
+                let p1 = &mut left[i];
+                let p2 = &mut right[0];
+
+                let direction = p2.pos - p1.pos;
+                let dist_sq = direction.length_squared();
+
+                //Newtons third law
+                let gravity_force = g / (dist_sq + softening);
+                let dir_norm = direction.normalize_or_zero();
+
+                //including mass to the acceleration
+                p1.acc += dir_norm * (gravity_force * p2.mass);
+                p2.acc -= dir_norm * (gravity_force * p1.mass);
             }
         }
     }
