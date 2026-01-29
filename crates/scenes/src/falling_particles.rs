@@ -84,7 +84,7 @@ impl Scene for FallingParticles {
         let mut rng = rand::thread_rng();
 
         if left_click {
-            let id = world.add_particle(Particle::new(mouse_pos));
+            let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
             println!("Spawned particle #{id} at {:?}", mouse_pos);
         }
 
@@ -104,7 +104,7 @@ impl Scene for FallingParticles {
                 let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
                 let y = rng.gen_range(mouse_pos.y - 20.0..mouse_pos.y + 20.0);
                 let random_pos: Vec2 = Vec2::new(x, y);
-                world.add_particle(Particle::new(random_pos));
+                world.add_particle(Particle::new(random_pos, world.particle_radius));
             }
         }
 

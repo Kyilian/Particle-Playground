@@ -96,9 +96,8 @@ impl World {
                 let a = &mut left[i];
                 let b = &mut right[0];
 
-                let min_dist = 2.0 * self.particle_radius;
                 //falls unterschiedlich große partikel implementiert
-                //let min_dist = a.radius + b.radius;
+                let min_dist = a.radius + b.radius;
                 let dir = b.pos - a.pos;
                 let dist = dir.length();
 
@@ -112,16 +111,12 @@ impl World {
                     };
                     let overlap = min_dist - dist;
 
-                    let correction = normal * (overlap * 0.5);
-                    a.pos -= correction;
-                    b.pos += correction;
-
                     //falls unterschiedlich große partikel implementiert
-                    //let total = a.radius + b.radius;
-                    //let wa = b.radius / total; // a wird weniger bewegt, wenn a groß ist
-                    //let wb = a.radius / total;
-                    //a.pos -= normal * overlap * wa;
-                    //b.pos += normal * overlap * wb;
+                    let total = a.radius + b.radius;
+                    let wa = b.radius / total; // a wird weniger bewegt, wenn a groß ist
+                    let wb = a.radius / total;
+                    a.pos -= normal * overlap * wa;
+                    b.pos += normal * overlap * wb;
 
                     // vel = pos - old_pos
                     let vel_a = a.pos - a.old_pos;
@@ -147,8 +142,13 @@ impl World {
     }
 
     pub fn solve_particle_collisions_grid(&mut self) {
-        let min_dist = 2.0 * self.particle_radius;
-        let cell_size = min_dist.max(1e-6);
+        let max_radius = self
+            .particles
+            .iter()
+            .map(|p| p.radius)
+            .fold(self.particle_radius, f32::max);
+
+        let cell_size = (max_radius * 2.0).max(1e-6);
 
         let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
 
@@ -217,18 +217,22 @@ impl World {
 
             let dir = b.pos - a.pos;
             let dist = dir.length();
+            let min_dist = a.radius + b.radius;
 
             if dist < min_dist {
                 let normal = if dist > 0.0 { dir / dist } else { Vec2::X };
 
                 let overlap = min_dist - dist;
-                let correction = normal * (overlap * 0.5);
-                a.pos -= correction;
-                b.pos += correction;
+
+                let total_radius = a.radius + b.radius;
+                let wa = b.radius / total_radius;
+                let wb = a.radius / total_radius;
+
+                a.pos -= normal * overlap * wa;
+                b.pos += normal * overlap * wb;
 
                 let vel_a = a.pos - a.old_pos;
                 let vel_b = b.pos - b.old_pos;
-
                 let rel_vel = vel_b - vel_a;
                 let rel_normal_speed = rel_vel.dot(normal);
 
@@ -261,6 +265,8 @@ impl World {
         self.particles.clear();
         self.colliders.clear();
         self.gravity = DEFAULT_GRAVITY;
+        self.particle_radius = DEFAULT_PARTICLE_RADIUS;
+        self.restitution = DEFAULT_RESTITUTION;
     }
 
     pub fn clear_particles(&mut self) {

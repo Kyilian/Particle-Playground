@@ -5,15 +5,17 @@ pub struct Particle {
     pub pos: Vec2,
     pub old_pos: Vec2,
     pub acc: Vec2, // force z.b gravity
+    pub radius: f32,
 }
 
 impl Particle {
     /// Creates a new particle at the given position.
-    pub fn new(pos: Vec2) -> Self {
+    pub fn new(pos: Vec2, radius: f32) -> Self {
         Self {
             pos,
             old_pos: pos,
             acc: Vec2::ZERO,
+            radius,
         }
     }
 
