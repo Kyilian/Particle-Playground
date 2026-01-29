@@ -27,7 +27,6 @@ impl NBodyScene {
             rect_size_old: Vec2::new(400.0, 400.0),
         }
     }
-
 }
 
 impl Default for NBodyScene {

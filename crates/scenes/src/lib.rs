@@ -69,13 +69,10 @@ impl SceneType {
                 TestScene::init_world(world);
                 Box::new(TestScene::new())
             }
-            SceneType::NBodyScene => {
-                Box::new(NBodyScene::new())
-            } 
-            // SceneType::LiquidSimulation => {
-              //    LiquidSimulation::init_world(world);
-              //    Box::new(LiquidSimulation::new())
-              // }
+            SceneType::NBodyScene => Box::new(NBodyScene::new()), // SceneType::LiquidSimulation => {
+                                                                  //    LiquidSimulation::init_world(world);
+                                                                  //    Box::new(LiquidSimulation::new())
+                                                                  // }
         }
     }
 }
