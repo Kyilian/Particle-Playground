@@ -1,7 +1,9 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{Particle, RectCollider};
+use pp_physics::{Particle, RectCollider, World};
+use pp_render::RenderContext;
 use rand::prelude::*;
+
 pub struct NBodyScene {
     gravity: f32,
     mass: f32,
@@ -24,6 +26,14 @@ impl NBodyScene {
             rect_size: Vec2::new(400.0, 400.0),
             rect_size_old: Vec2::new(400.0, 400.0),
         }
+    }
+
+    pub fn init_world(world: &mut World) {
+        world.add_rect_collider(RectCollider {
+            center: Vec2::new(0.0, 0.0),
+            width: 800.0,
+            height: 600.0,
+        });
     }
 }
 
@@ -50,7 +60,7 @@ impl Scene for NBodyScene {
 
     fn on_click(
         &mut self,
-        world: &mut pp_physics::World,
+        world: &mut World,
         mouse_pos: glam::Vec2,
         right_click: bool,
         left_click: bool,
@@ -98,8 +108,8 @@ impl Scene for NBodyScene {
 
     fn render<'rpass>(
         &self,
-        _world: &pp_physics::World,
-        ctx: &pp_render::RenderContext<'rpass>,
+        _world: &World,
+        ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
         ctx.particle_renderer

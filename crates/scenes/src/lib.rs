@@ -3,15 +3,12 @@ pub mod falling_particles;
 pub mod nbody_scene;
 pub mod scenes;
 pub mod test_scene;
-pub mod benchmark_scene;
 
 pub use benchmark_scene::BenchmarkScene;
 pub use falling_particles::FallingParticles;
-pub use benchmark_scene::BenchmarkScene;
 pub use nbody_scene::NBodyScene;
 pub use scenes::Scene;
 pub use test_scene::TestScene;
-pub use scenes::Scene;
 
 use pp_physics::World;
 
@@ -21,7 +18,7 @@ pub enum SceneType {
     FallingParticles,
     BenchmarkScene,
     TestScene,
-    // LiquidSimulation for later
+    NBodyScene, // LiquidSimulation for later
 }
 
 impl SceneType {
@@ -31,6 +28,7 @@ impl SceneType {
             SceneType::FallingParticles,
             SceneType::BenchmarkScene,
             SceneType::TestScene,
+            SceneType::NBodyScene,
             // SceneType::LiquidSimulation
         ]
     }
@@ -40,6 +38,7 @@ impl SceneType {
             SceneType::FallingParticles => "Falling Particles",
             SceneType::BenchmarkScene => "Benchmark Scene",
             SceneType::TestScene => "Test Scene",
+            SceneType::NBodyScene => "N-Body Scene",
             // SceneType::WaterSimulation => "Water Simulation",
         }
     }
@@ -47,8 +46,9 @@ impl SceneType {
     pub fn description(&self) -> &'static str {
         match self {
             SceneType::FallingParticles => "Particles falling down to customizable gravity",
-            SceneType::BenchmarkScene => "Performance-Test: Spawnt kontinuierlich Partikel bis die FPS unter 30 fallen.",
-            SceneType::TestScene => "Test-Szene mit verschiedenen Collider-Typen (Kreis und Rechteck).",
+            SceneType::BenchmarkScene => "Performance-Test: Continuously spawns particles until the fps fall under 30.",
+            SceneType::TestScene => "Test-Scene with different collider-types (circle and triangle).",
+            SceneType::NBodyScene => "N-Body gravitation simulation, left-click to spawn a particle with a stronger pull."
             // SceneType::LiquidSimulation => TBD
         }
     }
@@ -69,10 +69,14 @@ impl SceneType {
                 TestScene::init_world(world);
                 Box::new(TestScene::new())
             }
+            SceneType::NBodyScene => {
+                NBodyScene::init_world(world);
+                Box::new(NBodyScene::new())
+            } 
             // SceneType::LiquidSimulation => {
-            //    LiquidSimulation::init_world(world);
-            //    Box::new(LiquidSimulation::new())
-            // }
+              //    LiquidSimulation::init_world(world);
+              //    Box::new(LiquidSimulation::new())
+              // }
         }
     }
 }

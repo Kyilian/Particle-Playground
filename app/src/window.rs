@@ -21,9 +21,9 @@ enum AppState {
         selected_scene: Option<SceneType>,
     },
     Running {
-            scene: Box<dyn Scene>,
-            scene_type: SceneType,
-            world: World
+        scene: Box<dyn Scene>,
+        scene_type: SceneType,
+        world: World,
     },
 }
 
@@ -157,7 +157,10 @@ impl RenderWindow {
         event_loop.run(move |event, elwt| {
             match event {
                 // 1. HAUPT-BLOCK: FENSTER EVENTS
-                Event::WindowEvent { event: ref win_event, .. } => {
+                Event::WindowEvent {
+                    event: ref win_event,
+                    ..
+                } => {
                     let response = render_window
                         .egui_state
                         .on_window_event(&*window, &win_event);
@@ -193,7 +196,9 @@ impl RenderWindow {
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
                             if *state == ElementState::Pressed {
-                                if let AppState::Running { scene, world, .. } = &mut render_window.app_state {
+                                if let AppState::Running { scene, world, .. } =
+                                    &mut render_window.app_state
+                                {
                                     let is_left = *button == MouseButton::Left;
                                     let is_right = *button == MouseButton::Right;
                                     let is_middle = *button == MouseButton::Middle;
@@ -230,7 +235,7 @@ impl RenderWindow {
                     accumulator += frame_time;
 
                     match &mut render_window.app_state {
-                        AppState::Running {scene, world, ..} => {
+                        AppState::Running { scene, world, .. } => {
                             world.fps = fps;
 
                             while accumulator >= TIME_STEP {
@@ -243,10 +248,9 @@ impl RenderWindow {
 
                     if let AppState::Running { world, .. } = &render_window.app_state {
                         println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
-                        render_window.particle_renderer.update_particles(
-                            &world.particles,
-                            &render_window.queue,
-                        );
+                        render_window
+                            .particle_renderer
+                            .update_particles(&world.particles, &render_window.queue);
                     }
 
                     let raw_input = render_window.egui_state.take_egui_input(&*window);
@@ -335,7 +339,11 @@ impl RenderWindow {
                     });
                 });
             }
-            AppState::Running { scene, scene_type, world } => {
+            AppState::Running {
+                scene,
+                scene_type,
+                world,
+            } => {
                 egui::Window::new("Navigation")
                     .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
                     .resizable(false)
@@ -401,8 +409,10 @@ impl RenderWindow {
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
 
-            self.world.WINDOW_HEIGHT = new_height;
-            self.world.WINDOW_WIDTH = new_width;
+            if let AppState::Running { world, .. } = &mut self.app_state {
+                world.WINDOW_HEIGHT = new_height;
+                world.WINDOW_WIDTH = new_width;
+            }
 
             //new renderer incase window gets resized
             //changed it to the Uniform buffer
@@ -480,7 +490,7 @@ impl RenderWindow {
                 occlusion_query_set: None,
             });
 
-            if let AppState::Running {scene, world, ..} = &self.app_state {
+            if let AppState::Running { scene, world, .. } = &self.app_state {
                 let ctx = RenderContext {
                     particle_renderer: &self.particle_renderer,
                     queue: &self.queue,
