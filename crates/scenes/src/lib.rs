@@ -80,3 +80,37 @@ impl SceneType {
         }
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    //check if all scene types have valid display names and descriptions
+    #[test]
+    fn test_scene_type() {
+        for scene_type in SceneType::all() {
+            //name not empty
+            let name = scene_type.display_name();
+            assert!(!name.is_empty(), "A SceneType doesn't have a name.");
+
+            //description not empty
+            let description = scene_type.description();
+            assert!(!description.is_empty(), "A SceneType doesn't have a description.");
+
+            //description minimum value
+            assert!(description.len() >= 10, "A scene description is too small (under 10 signs).");
+        };
+    }
+
+    #[test]
+    fn test_scene_creation_and_world_initialization() {
+        for scene_type in SceneType::all() {
+            let mut world = World::new();
+            let _scene = scene_type.create_scene(&mut world);
+            //scene should be created
+            assert_eq!(world.particles.len(), 0, "SceneType {:?} should start with 0 particles", scene_type);
+        };
+    }
+
+}
