@@ -483,6 +483,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
+name = "benchmark_demo"
+version = "0.1.0"
+dependencies = [
+ "pp_app",
+ "pp_scenes",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2951,22 +2959,8 @@ checksum = "e320a6c5ad31d271ad523dcf3ad13e2767ad8b1cb8f047f75a8aeaf8da139da2"
 name = "simple_demo"
 version = "0.1.0"
 dependencies = [
- "egui",
- "egui-wgpu",
- "egui-winit",
- "env_logger",
- "glam",
- "log",
- "pollster",
  "pp_app",
- "pp_common",
- "pp_gui",
- "pp_input",
- "pp_physics",
- "pp_render",
  "pp_scenes",
- "wgpu",
- "winit",
 ]
 
 [[package]]

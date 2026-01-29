@@ -3,14 +3,14 @@ use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, World};
 use pp_render::RenderContext;
 
-pub struct BenchmarkScene{
+pub struct BenchmarkScene {
     gravity: f32,
     particle_radius: f32,
     color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
 
-    bench_running:bool,
+    bench_running: bool,
     particles_per_sec: usize,
     accum: f32,
 
@@ -27,7 +27,7 @@ impl BenchmarkScene {
             collider_old: 450.0,
 
             bench_running: false,
-            particles_per_sec:1000,
+            particles_per_sec: 1000,
             accum: 0.0,
             speed: 800.0,
         }
@@ -61,9 +61,8 @@ impl Default for BenchmarkScene {
     }
 }
 
-impl Scene for BenchmarkScene{
-    fn update(&mut self, world: &mut World, dt: f32){
-
+impl Scene for BenchmarkScene {
+    fn update(&mut self, world: &mut World, dt: f32) {
         world.gravity = Vec2::new(0.0, self.gravity);
         world.particle_radius = self.particle_radius;
 
@@ -81,14 +80,14 @@ impl Scene for BenchmarkScene{
             self.accum += dt;
 
             while self.accum >= 1.0 {
-                    self.accum -= 1.0;
-                    self.spawn_line(world, self.particles_per_sec, dt);
+                self.accum -= 1.0;
+                self.spawn_line(world, self.particles_per_sec, dt);
             }
         }
 
         world.step(dt);
 
-        // stop bei unter 30fps 
+        // stop bei unter 30fps
         if self.bench_running && world.fps < 30.0 {
             self.bench_running = false;
             self.accum = 0.0;
@@ -121,7 +120,8 @@ impl Scene for BenchmarkScene{
         _right_click: bool,
         _left_click: bool,
         _is_middle: bool,
-    ) {}    
+    ) {
+    }
 
     fn reset(&mut self, world: &mut World) {
         world.clear_particles();
@@ -144,7 +144,10 @@ impl Scene for BenchmarkScene{
             ui.separator();
 
             // StartStop per Button
-            if ui.button(if self.bench_running { "Stop" } else { "Start" }).clicked() {
+            if ui
+                .button(if self.bench_running { "Stop" } else { "Start" })
+                .clicked()
+            {
                 self.bench_running = !self.bench_running;
                 self.accum = 0.0;
             }
@@ -156,15 +159,21 @@ impl Scene for BenchmarkScene{
             }
 
             ui.separator();
-            ui.add(egui::Slider::new(&mut self.particles_per_sec, 0..=20000).text("Particles / sec"));
+            ui.add(
+                egui::Slider::new(&mut self.particles_per_sec, 0..=20000).text("Particles / sec"),
+            );
             ui.separator();
             ui.add(egui::Slider::new(&mut self.speed, 0.0..=3000.0).text("Start speed"));
             ui.separator();
             ui.add(egui::Slider::new(&mut self.gravity, 0.0..=2000.0).text("Gravity"));
             ui.separator();
-            ui.add(egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Collider radius"));
+            ui.add(
+                egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Collider radius"),
+            );
             ui.separator();
-            ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=20.0).text("Particle radius"));
+            ui.add(
+                egui::Slider::new(&mut self.particle_radius, 1.0..=20.0).text("Particle radius"),
+            );
 
             ui.separator();
             if ui.button("Alles zurücksetzen").clicked() {
@@ -173,4 +182,3 @@ impl Scene for BenchmarkScene{
         });
     }
 }
-

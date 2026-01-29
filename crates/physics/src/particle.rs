@@ -5,6 +5,7 @@ pub struct Particle {
     pub pos: Vec2,
     pub old_pos: Vec2,
     pub acc: Vec2, // force z.b gravity
+    pub mass: f32,
 }
 
 impl Particle {
@@ -14,10 +15,20 @@ impl Particle {
             pos,
             old_pos: pos,
             acc: Vec2::ZERO,
+            mass: 10.0,
         }
     }
 
     pub fn add_force(&mut self, force: Vec2) {
         self.acc += force;
+    }
+
+    pub fn new_with_mass(pos: Vec2, mass: f32) -> Self {
+        Self {
+            pos,
+            old_pos: pos,
+            acc: Vec2::ZERO,
+            mass: mass,
+        }
     }
 }

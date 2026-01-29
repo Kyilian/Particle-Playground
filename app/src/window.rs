@@ -46,6 +46,8 @@ impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
 
+        let mut world = World::new();
+
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
@@ -57,7 +59,10 @@ impl RenderWindow {
             //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
-                .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
+                .with_inner_size(winit::dpi::LogicalSize::new(
+                    world.WINDOW_WIDTH,
+                    world.WINDOW_HEIGHT,
+                ))
                 .with_resizable(true)
                 .build(&event_loop)?,
         );
@@ -101,8 +106,8 @@ impl RenderWindow {
         let config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: WINDOW_WIDTH,
-            height: WINDOW_HEIGHT,
+            width: world.WINDOW_WIDTH,
+            height: world.WINDOW_HEIGHT,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
@@ -122,6 +127,8 @@ impl RenderWindow {
 
         let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1);
 
+        //adding so the circle_collider is stays in the center while resizing
+        //creates particle renderer
         let particle_renderer = ParticleRenderer::new(&device, &config);
 
         // creates render window state
@@ -251,9 +258,8 @@ impl RenderWindow {
 
                     match render_window.render(full_output) {
                         Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => {
-                            render_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-                        }
+                        Err(wgpu::SurfaceError::Lost) => render_window
+                            .resize(render_window.config.width, render_window.config.height),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             eprintln!("Out of memory!");
                             elwt.exit();
@@ -394,6 +400,9 @@ impl RenderWindow {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
+
+            self.world.WINDOW_HEIGHT = new_height;
+            self.world.WINDOW_WIDTH = new_width;
 
             //new renderer incase window gets resized
             //changed it to the Uniform buffer
