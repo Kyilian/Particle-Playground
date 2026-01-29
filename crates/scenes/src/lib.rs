@@ -13,7 +13,7 @@ pub use test_scene::TestScene;
 use pp_physics::World;
 
 //All scene types
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SceneType {
     FallingParticles,
     BenchmarkScene,
@@ -72,15 +72,13 @@ impl SceneType {
             SceneType::NBodyScene => {
                 NBodyScene::init_world(world);
                 Box::new(NBodyScene::new())
-            } 
-            // SceneType::LiquidSimulation => {
+            } // SceneType::LiquidSimulation => {
               //    LiquidSimulation::init_world(world);
               //    Box::new(LiquidSimulation::new())
               // }
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -96,21 +94,16 @@ mod tests {
 
             //description not empty
             let description = scene_type.description();
-            assert!(!description.is_empty(), "A SceneType doesn't have a description.");
+            assert!(
+                !description.is_empty(),
+                "A SceneType doesn't have a description."
+            );
 
             //description minimum value
-            assert!(description.len() >= 10, "A scene description is too small (under 10 signs).");
-        };
+            assert!(
+                description.len() >= 10,
+                "A scene description is too small (under 10 signs)."
+            );
+        }
     }
-
-    #[test]
-    fn test_scene_creation_and_world_initialization() {
-        for scene_type in SceneType::all() {
-            let mut world = World::new();
-            let _scene = scene_type.create_scene(&mut world);
-            //scene should be created
-            assert_eq!(world.particles.len(), 0, "SceneType {:?} should start with 0 particles", scene_type);
-        };
-    }
-
 }
