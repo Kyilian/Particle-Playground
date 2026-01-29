@@ -28,13 +28,6 @@ impl NBodyScene {
         }
     }
 
-    pub fn init_world(world: &mut World) {
-        world.add_rect_collider(RectCollider {
-            center: Vec2::new(0.0, 0.0),
-            width: 800.0,
-            height: 600.0,
-        });
-    }
 }
 
 impl Default for NBodyScene {
