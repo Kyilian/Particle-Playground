@@ -1,7 +1,9 @@
 use glam::Vec2;
-use pp_physics::{CircleCollider, World};
+
+use pp_physics::World;
+
 use pp_render::{ParticleRenderer, RenderContext};
-use pp_scenes::Scene;
+use pp_scenes::{Scene, SceneType};
 use std::sync::Arc; //Arc for dual ownership
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::{
@@ -14,6 +16,17 @@ use winit::{
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 
+enum AppState {
+    Launcher {
+        selected_scene: Option<SceneType>,
+    },
+    Running {
+        scene: Box<dyn Scene>,
+        scene_type: SceneType,
+        world: World,
+    },
+}
+
 pub struct RenderWindow {
     surface: Surface<'static>,
     device: Device,
@@ -21,8 +34,7 @@ pub struct RenderWindow {
     config: SurfaceConfiguration,
     particle_renderer: ParticleRenderer,
 
-    current_scene: Box<dyn Scene>,
-    world: World,
+    app_state: AppState,
 
     pub is_minimized: bool,
 
@@ -31,12 +43,15 @@ pub struct RenderWindow {
 }
 
 impl RenderWindow {
-    pub fn run(initial_scene: Box<dyn Scene>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
+
+        let mut world = World::new();
 
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
+        let mut fps: f32 = 0.0;
 
         // creates event loop and window
         let event_loop = EventLoop::new().unwrap();
@@ -44,7 +59,10 @@ impl RenderWindow {
             //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
-                .with_inner_size(winit::dpi::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT))
+                .with_inner_size(winit::dpi::LogicalSize::new(
+                    world.WINDOW_WIDTH,
+                    world.WINDOW_HEIGHT,
+                ))
                 .with_resizable(true)
                 .build(&event_loop)?,
         );
@@ -88,8 +106,8 @@ impl RenderWindow {
         let config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: WINDOW_WIDTH,
-            height: WINDOW_HEIGHT,
+            width: world.WINDOW_WIDTH,
+            height: world.WINDOW_HEIGHT,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
@@ -110,16 +128,8 @@ impl RenderWindow {
         let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1);
 
         //adding so the circle_collider is stays in the center while resizing
-        //Main
-        let mut world = World::new();
-
         //creates particle renderer
         let particle_renderer = ParticleRenderer::new(&device, &config);
-
-        world.add_circle_collider(CircleCollider {
-            center: Vec2::new(0.0, 0.0), // (0,0) is now the center
-            radius: 250.0,
-        });
 
         // creates render window state
         let mut render_window = Self {
@@ -128,11 +138,10 @@ impl RenderWindow {
             queue,
             config,
             particle_renderer,
-            current_scene: initial_scene,
-            world,
-
+            app_state: AppState::Launcher {
+                selected_scene: Some(SceneType::FallingParticles),
+            },
             is_minimized: false,
-
             egui_renderer,
             egui_state,
         };
@@ -165,7 +174,15 @@ impl RenderWindow {
                         WindowEvent::KeyboardInput { event, .. } => {
                             if event.state == ElementState::Pressed {
                                 if let Key::Named(NamedKey::Escape) = event.logical_key {
-                                    elwt.exit();
+                                    // ESC: Zurück zum Launcher
+                                    match &render_window.app_state {
+                                        AppState::Running { .. } => {
+                                            render_window.return_to_launcher();
+                                        }
+                                        AppState::Launcher { .. } => {
+                                            elwt.exit();
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -178,20 +195,15 @@ impl RenderWindow {
                             );
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
-                            if !response.consumed {
-                                // Deine Klick-Logik (unverändert übernommen)
-                                if *state == ElementState::Pressed {
+                            if *state == ElementState::Pressed {
+                                if let AppState::Running { scene, world, .. } =
+                                    &mut render_window.app_state
+                                {
                                     let is_left = *button == MouseButton::Left;
                                     let is_right = *button == MouseButton::Right;
                                     let is_middle = *button == MouseButton::Middle;
 
-                                    render_window.current_scene.on_click(
-                                        &mut render_window.world,
-                                        mouse_pos,
-                                        is_right,
-                                        is_left,
-                                        is_middle,
-                                    );
+                                    scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
                                 }
                             }
                         }
@@ -214,14 +226,7 @@ impl RenderWindow {
                     fps_frames += 1;
 
                     if fps_acc_time >= 0.5 {
-                        let fps: f32 = fps_frames as f32 / fps_acc_time;
-
-                        render_window.world.fps = fps;
-                        println!(
-                            "FPS: {:.1} | Particles: {}",
-                            fps,
-                            render_window.world.particles.len()
-                        );
+                        fps = fps_frames as f32 / fps_acc_time;
                         fps_acc_time = 0.0;
                         fps_frames = 0;
                     }
@@ -229,33 +234,36 @@ impl RenderWindow {
                     last_time = current_time;
                     accumulator += frame_time;
 
-                    while accumulator >= TIME_STEP {
-                        render_window
-                            .current_scene
-                            .update(&mut render_window.world, TIME_STEP);
-                        accumulator -= TIME_STEP;
+                    match &mut render_window.app_state {
+                        AppState::Running { scene, world, .. } => {
+                            world.fps = fps;
+
+                            while accumulator >= TIME_STEP {
+                                scene.update(world, TIME_STEP);
+                                accumulator -= TIME_STEP;
+                            }
+                        }
+                        _ => {}
                     }
 
-                    render_window
-                        .particle_renderer
-                        .update_particles(&render_window.world.particles, &render_window.queue);
+                    if let AppState::Running { world, .. } = &render_window.app_state {
+                        println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
+                        render_window
+                            .particle_renderer
+                            .update_particles(&world.particles, &render_window.queue);
+                    }
 
                     let raw_input = render_window.egui_state.take_egui_input(&*window);
                     render_window.egui_state.egui_ctx().begin_frame(raw_input);
 
-                    // Deine UI Definition
-                    render_window.current_scene.ui(
-                        render_window.egui_state.egui_ctx(),
-                        &mut render_window.world,
-                    );
+                    render_window.render_ui();
 
                     let full_output = render_window.egui_state.egui_ctx().end_frame();
 
                     match render_window.render(full_output) {
                         Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => {
-                            render_window.resize(WINDOW_WIDTH, WINDOW_HEIGHT)
-                        }
+                        Err(wgpu::SurfaceError::Lost) => render_window
+                            .resize(render_window.config.width, render_window.config.height),
                         Err(wgpu::SurfaceError::OutOfMemory) => {
                             eprintln!("Out of memory!");
                             elwt.exit();
@@ -269,6 +277,121 @@ impl RenderWindow {
             elwt.set_control_flow(ControlFlow::Poll);
         })?;
         Ok(())
+    }
+
+    fn render_ui(&mut self) {
+        let ctx = self.egui_state.egui_ctx().clone();
+
+        // check which state is active and do action accordingly
+        let mut action: Option<SceneType> = None;
+        let mut should_return = false;
+
+        match &mut self.app_state {
+            AppState::Launcher { selected_scene } => {
+                egui::CentralPanel::default().show(&ctx, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.add_space(40.0);
+                        ui.heading("🎮 Particle Playground");
+                        ui.add_space(10.0);
+                        ui.label("Wähle eine Simulation:");
+                        ui.add_space(30.0);
+                    });
+
+                    ui.vertical_centered(|ui| {
+                        for scene_type in SceneType::all() {
+                            let is_selected = *selected_scene == Some(*scene_type);
+
+                            egui::Frame::none()
+                                .fill(if is_selected {
+                                    egui::Color32::from_rgb(60, 60, 80)
+                                } else {
+                                    egui::Color32::from_rgb(40, 40, 50)
+                                })
+                                .rounding(8.0)
+                                .inner_margin(12.0)
+                                .show(ui, |ui| {
+                                    ui.set_min_width(300.0);
+                                    ui.horizontal(|ui| {
+                                        ui.radio_value(selected_scene, Some(*scene_type), "");
+                                        ui.vertical(|ui| {
+                                            ui.strong(scene_type.display_name());
+                                            ui.label(scene_type.description());
+                                        });
+                                    });
+                                });
+
+                            ui.add_space(8.0);
+                        }
+
+                        ui.add_space(20.0);
+
+                        let start_enabled = selected_scene.is_some();
+
+                        if ui
+                            .add_enabled(
+                                start_enabled,
+                                egui::Button::new("▶ Starten").min_size(egui::vec2(120.0, 40.0)),
+                            )
+                            .clicked()
+                        {
+                            action = *selected_scene;
+                        }
+                    });
+                });
+            }
+            AppState::Running {
+                scene,
+                scene_type,
+                world,
+            } => {
+                egui::Window::new("Navigation")
+                    .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
+                    .resizable(false)
+                    .collapsible(false)
+                    .show(&ctx, |ui| {
+                        ui.label(format!("Aktive Scene: {}", scene_type.display_name()));
+                        ui.separator();
+
+                        if ui.button("🔙 Zurück zur Auswahl").clicked() {
+                            should_return = true;
+                        }
+
+                        ui.label("(oder ESC drücken)");
+                    });
+
+                // scene-specific ui
+                scene.ui(&ctx, world);
+            }
+        }
+
+        if let Some(scene_type) = action {
+            self.start_scene(scene_type);
+        }
+
+        if should_return {
+            self.return_to_launcher();
+        }
+    }
+
+    fn start_scene(&mut self, scene_type: SceneType) {
+        println!("Starte Scene: {}", scene_type.display_name());
+
+        let mut world = World::new();
+        let scene = scene_type.create_scene(&mut world);
+
+        self.app_state = AppState::Running {
+            scene,
+            scene_type,
+            world,
+        };
+    }
+
+    fn return_to_launcher(&mut self) {
+        println!("Zurück zum Launcher...");
+
+        self.app_state = AppState::Launcher {
+            selected_scene: Some(SceneType::FallingParticles),
+        };
     }
 
     fn resize(&mut self, new_width: u32, new_height: u32) {
@@ -285,6 +408,11 @@ impl RenderWindow {
             self.config.width = new_width;
             self.config.height = new_height;
             self.surface.configure(&self.device, &self.config);
+
+            if let AppState::Running { world, .. } = &mut self.app_state {
+                world.WINDOW_HEIGHT = new_height;
+                world.WINDOW_WIDTH = new_width;
+            }
 
             //new renderer incase window gets resized
             //changed it to the Uniform buffer
@@ -362,14 +490,14 @@ impl RenderWindow {
                 occlusion_query_set: None,
             });
 
-            let ctx = RenderContext {
-                particle_renderer: &self.particle_renderer,
-                queue: &self.queue,
-                device: &self.device,
-            };
-
-            self.current_scene
-                .render(&self.world, &ctx, &mut render_pass);
+            if let AppState::Running { scene, world, .. } = &self.app_state {
+                let ctx = RenderContext {
+                    particle_renderer: &self.particle_renderer,
+                    queue: &self.queue,
+                    device: &self.device,
+                };
+                scene.render(world, &ctx, &mut render_pass);
+            }
 
             self.egui_renderer
                 .render(&mut render_pass, &paint_jobs, &screen_descriptor);

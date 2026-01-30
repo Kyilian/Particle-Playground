@@ -29,6 +29,7 @@ mod test {
             pos: (Vec2::ZERO),
             old_pos: (Vec2::ZERO),
             acc: (Vec2::ZERO),
+            mass: 10.0,
             radius: 6.0,
         });
         world.add_circle_collider(CircleCollider {

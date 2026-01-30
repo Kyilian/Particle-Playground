@@ -15,6 +15,7 @@ pollster = "0.3"
 egui = "0.28.0" 
 egui-winit = "0.28.0" 
 egui-wgpu = "0.28.0" 
+eframe = "0.28.0"
 
 #Logging
 log = "0.4"
