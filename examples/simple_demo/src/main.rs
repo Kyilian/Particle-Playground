@@ -7,7 +7,9 @@ use pp_scenes::test_scene::TestScene;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_scene = Box::new(NBodyScene::new());
 
-    println!("Starte Particle Playground...");
+    println!("Starting particle playground...");
 
-    RenderWindow::run(start_scene)
+    RenderWindow::run()?;
+
+    Ok(())
 }

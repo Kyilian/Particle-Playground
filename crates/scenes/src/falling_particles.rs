@@ -1,7 +1,7 @@
 use super::Scene;
 use glam::Vec2;
 use pp_physics::{CircleCollider, Particle, World};
-use pp_render::{ParticleRenderer, RenderContext};
+use pp_render::RenderContext;
 use rand::prelude::*;
 
 //Using constant placeholders for window size
@@ -26,6 +26,13 @@ impl FallingParticles {
             collider_radius: 250.0,
             collider_old: 250.0,
         }
+    }
+
+    pub fn init_world(world: &mut World) {
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::new(0.0, 0.0),
+            radius: 250.0,
+        });
     }
 }
 
@@ -56,7 +63,7 @@ impl Scene for FallingParticles {
     //call to the render function
     fn render<'rpass>(
         &self,
-        world: &World,
+        _world: &World,
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {

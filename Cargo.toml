@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*","app", "examples/simple_demo", "examples/benchmark_demo"]
+members = ["crates/*","app", "examples/simple_demo"]
 
 [workspace.dependencies]
 #Core und Window handeling
@@ -15,6 +15,7 @@ pollster = "0.3"
 egui = "0.28.0" 
 egui-winit = "0.28.0" 
 egui-wgpu = "0.28.0" 
+eframe = "0.28.0"
 
 #Logging
 log = "0.4"

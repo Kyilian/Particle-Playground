@@ -39,6 +39,13 @@ impl TestScene {
             rect_size_old: Vec2::new(400.0, 400.0),
         }
     }
+
+    pub fn init_world(world: &mut World) {
+        world.add_circle_collider(CircleCollider {
+            center: Vec2::new(0.0, 0.0),
+            radius: 250.0,
+        });
+    }
 }
 
 impl Default for TestScene {
