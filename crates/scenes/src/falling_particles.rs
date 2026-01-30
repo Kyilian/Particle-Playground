@@ -1,6 +1,6 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{CircleCollider, Particle, World, world::Magnet};
+use pp_physics::{world::Magnet, CircleCollider, Particle, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
@@ -65,7 +65,6 @@ impl Default for FallingParticles {
     }
 }
 
-
 impl Scene for FallingParticles {
     //update particle position in world
     fn update(&mut self, _world: &mut World, _dt: f32) {
@@ -74,7 +73,7 @@ impl Scene for FallingParticles {
 
         for p in &mut _world.particles {
             if p.is_magnet {
-                p.old_pos = p.pos; 
+                p.old_pos = p.pos;
             }
         }
 
@@ -120,7 +119,7 @@ impl Scene for FallingParticles {
         if self.ui_has_focus {
             return;
         }
-        
+
         let mut rng = rand::thread_rng();
 
         if left_click {
@@ -147,7 +146,7 @@ impl Scene for FallingParticles {
                     let density = (self.magnet_strength.abs() / 10000.0);
                     // rot für anziehung, blau für abstoßung
                     let new_color = if self.magnet_strength >= 0.0 {
-                        [1.0, 0.0, 0.0, density] 
+                        [1.0, 0.0, 0.0, density]
                     } else {
                         [0.0, 0.0, 1.0, density]
                     };
@@ -182,7 +181,8 @@ impl Scene for FallingParticles {
         }
 
         let nearest_magnet = world.magnets.iter_mut().min_by(|a, b| {
-            a.pos.distance_squared(mouse_pos)
+            a.pos
+                .distance_squared(mouse_pos)
                 .partial_cmp(&b.pos.distance_squared(mouse_pos))
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
@@ -192,9 +192,13 @@ impl Scene for FallingParticles {
                 if let Some(m) = nearest_magnet {
                     let old_radius = m.radius;
                     m.radius = (m.radius + scroll_y * 15.0);
-                    
+
                     // Partikel-Radius synchronisieren
-                    if let Some(p) = world.particles.iter_mut().find(|p| p.is_magnet && p.pos.distance(m.pos) < 1.0) {
+                    if let Some(p) = world
+                        .particles
+                        .iter_mut()
+                        .find(|p| p.is_magnet && p.pos.distance(m.pos) < 1.0)
+                    {
                         p.radius = m.radius;
                     }
                 }
@@ -207,15 +211,18 @@ impl Scene for FallingParticles {
                     let density = (m.strength.abs() / 10000.0);
                     // rot für anziehung, blau für abstoßung
                     let new_color = if m.strength >= 0.0 {
-                        [1.0, 0.0, 0.0, density] 
+                        [1.0, 0.0, 0.0, density]
                     } else {
                         [0.0, 0.0, 1.0, density]
                     };
 
-                    if let Some(p) = world.particles.iter_mut().find(|p| p.is_magnet && p.pos.distance(m.pos) < 1.0) {
-                    p.color = new_color;
-
-                }
+                    if let Some(p) = world
+                        .particles
+                        .iter_mut()
+                        .find(|p| p.is_magnet && p.pos.distance(m.pos) < 1.0)
+                    {
+                        p.color = new_color;
+                    }
                 }
             }
         }
@@ -260,24 +267,47 @@ impl Scene for FallingParticles {
             ui.add(egui::Slider::new(&mut self.magnet_radius, 10.0..=1000.0).text("Magnet Size"));
             ui.separator();
 
-            ui.add(egui::Slider::new(&mut self.magnet_strength, -1000.0..=1000.0).text("Magnet Strength"));
+            ui.add(
+                egui::Slider::new(&mut self.magnet_strength, -1000.0..=1000.0)
+                    .text("Magnet Strength"),
+            );
             ui.separator();
 
             ui.label("Left Click Mode:");
-            
-            ui.radio_value(&mut self.current_mode, MouseClickMode::SpawnSingle, "Single");
-            ui.radio_value(&mut self.current_mode, MouseClickMode::SpawnCluster, "Cluster");
-            ui.radio_value(&mut self.current_mode, MouseClickMode::PlaceMagnet, "Magnet");
+
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::SpawnSingle,
+                "Single",
+            );
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::SpawnCluster,
+                "Cluster",
+            );
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::PlaceMagnet,
+                "Magnet",
+            );
 
             ui.separator();
 
             ui.label("Scroll Mode:");
-            
-            ui.radio_value(&mut self.current_scroll_mode, MouseScrollMode::ResizeMagnet, "Resize Magnet");
-            ui.radio_value(&mut self.current_scroll_mode, MouseScrollMode::AdjustMagnetStrength, "Adjust Magnet Strength");
+
+            ui.radio_value(
+                &mut self.current_scroll_mode,
+                MouseScrollMode::ResizeMagnet,
+                "Resize Magnet",
+            );
+            ui.radio_value(
+                &mut self.current_scroll_mode,
+                MouseScrollMode::AdjustMagnetStrength,
+                "Adjust Magnet Strength",
+            );
 
             ui.separator();
-            
+
             ui.label(format!("Partikel: {}", _world.particles.len()));
 
             if ui.button("Remove Magnets").clicked() {

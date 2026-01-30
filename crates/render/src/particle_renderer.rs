@@ -336,36 +336,36 @@ impl ParticleRenderer {
             .iter()
             .map(|p| {
                 if p.is_magnet {
-                ParticleInstance {
-                    position: [p.pos.x, p.pos.y],
-                    color: p.color, // Nutze die Farbe des Magneten
-                    radius: p.radius,
-                    _padding: 0.0,
+                    ParticleInstance {
+                        position: [p.pos.x, p.pos.y],
+                        color: p.color, // Nutze die Farbe des Magneten
+                        radius: p.radius,
+                        _padding: 0.0,
+                    }
+                } else {
+                    //  calculate speed
+                    let velocity = p.pos - p.old_pos;
+                    let speed = velocity.length();
+
+                    // maps the speed on a 0.0 to 1.0 scale
+                    let t = (speed / max_speed).clamp(0.0, 1.0);
+
+                    // gives the partile a color based on its speed
+                    let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
+                    let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
+                    let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
+
+                    let alpha = if p.is_magnet { 0.01 } else { 1.0 };
+
+                    ParticleInstance {
+                        position: [p.pos.x, p.pos.y],
+                        color: [r, g, b, alpha],
+                        radius: p.radius,
+                        _padding: 0.0,
+                    }
                 }
-            } else {
-                //  calculate speed
-                let velocity = p.pos - p.old_pos;
-                let speed = velocity.length();
-
-                // maps the speed on a 0.0 to 1.0 scale
-                let t = (speed / max_speed).clamp(0.0, 1.0);
-
-                // gives the partile a color based on its speed
-                let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
-                let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
-                let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
-
-                let alpha = if p.is_magnet { 0.01 } else { 1.0 };
-
-                ParticleInstance {
-                    position: [p.pos.x, p.pos.y],
-                    color: [r, g, b, alpha],
-                    radius: p.radius,
-                    _padding: 0.0,
-                }
-            }
-        })
-        .collect();
+            })
+            .collect();
 
         //speichert anzahl
         self.instance_count = instances.len() as u32;
