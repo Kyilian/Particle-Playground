@@ -185,7 +185,6 @@ impl ParticleRenderer {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
             _padding: [1.0, 1.0, 1.0, 1.0],
             _padding2: [1.0, 1.0, 1.0, 1.0],
-
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
