@@ -17,7 +17,7 @@ impl Particle {
             old_pos: pos,
             acc: Vec2::ZERO,
             mass: 10.0,
-            radius,
+            radius: radius,
         }
     }
 
@@ -25,12 +25,13 @@ impl Particle {
         self.acc += force;
     }
 
-    pub fn new_with_mass(pos: Vec2, mass: f32) -> Self {
+    pub fn new_with_mass(pos: Vec2, mass: f32, radius: f32) -> Self {
         Self {
             pos,
             old_pos: pos,
             acc: Vec2::ZERO,
             mass: mass,
+            radius: radius,
         }
     }
 }
