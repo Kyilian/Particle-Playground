@@ -77,6 +77,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 pub struct GlobalUniforms {
     pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
     pub _padding: [f32; 4],
+    pub _padding2: [f32; 4],
 }
 
 // Renderer für Partikel als Kreise mit GPU-Instancing
@@ -183,6 +184,8 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
             _padding: [1.0, 1.0, 1.0, 1.0],
+            _padding2: [1.0, 1.0, 1.0, 1.0],
+
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -306,6 +309,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
             _padding: color,
+            _padding2: [particle_radius, 0.0, 0.0, 0.0],
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
