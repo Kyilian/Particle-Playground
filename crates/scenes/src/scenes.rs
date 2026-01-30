@@ -24,6 +24,8 @@ pub trait Scene {
         is_middle: bool,
     );
 
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32);
+
     fn reset(&mut self, world: &mut World);
 
     fn ui(&mut self, ctx: &Context, world: &mut World);

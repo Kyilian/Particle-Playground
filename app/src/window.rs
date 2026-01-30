@@ -207,6 +207,20 @@ impl RenderWindow {
                                 }
                             }
                         }
+                        WindowEvent::MouseWheel { delta, .. } => {
+                            let scroll_y = match delta {
+                                winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
+                                winit::event::MouseScrollDelta::PixelDelta(pos) => {
+                                    pos.y as f32 * 0.1
+                                } // Pixel-Scroll normalisieren
+                            };
+
+                            if let AppState::Running { scene, world, .. } =
+                                &mut render_window.app_state
+                            {
+                                scene.handle_scroll(world, mouse_pos, scroll_y);
+                            }
+                        }
                         WindowEvent::Resized(physical_size) => {
                             render_window.resize(physical_size.width, physical_size.height);
                         }

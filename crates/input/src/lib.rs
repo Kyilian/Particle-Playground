@@ -6,6 +6,7 @@ pub struct InputState {
     pub cursor_pos: (f32, f32),
     pub mouse_left_down: bool,
     pub mouse_right_down: bool,
+    pub scroll_delta: f32,
 }
 
 impl InputState {
@@ -15,6 +16,7 @@ impl InputState {
             cursor_pos: (0.0, 0.0),
             mouse_left_down: false,
             mouse_right_down: false,
+            scroll_delta: 0.0,
         }
     }
 
@@ -43,7 +45,14 @@ impl InputState {
                     }
                 }
             }
-
+            WindowEvent::MouseWheel { delta, .. } => match delta {
+                winit::event::MouseScrollDelta::LineDelta(_, y) => {
+                    self.scroll_delta = *y;
+                }
+                winit::event::MouseScrollDelta::PixelDelta(pos) => {
+                    self.scroll_delta = (pos.y as f32 / 10.0);
+                }
+            },
             _ => {}
         }
     }

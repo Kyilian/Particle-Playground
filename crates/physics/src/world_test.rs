@@ -31,6 +31,8 @@ mod test {
             acc: (Vec2::ZERO),
             mass: 10.0,
             radius: 6.0,
+            is_magnet: false,
+            color: [1.0, 1.0, 1.0, 1.0],
         });
         world.add_circle_collider(CircleCollider {
             center: Vec2::ZERO,

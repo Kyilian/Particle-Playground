@@ -145,6 +145,8 @@ impl Scene for TestScene {
         }
     }
 
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;

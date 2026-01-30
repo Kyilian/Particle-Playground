@@ -6,6 +6,12 @@ use std::collections::HashMap;
 const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, 9.81);
 const DEFAULT_PARTICLE_RADIUS: f32 = 6.0;
 const DEFAULT_RESTITUTION: f32 = 0.96;
+
+pub struct Magnet {
+    pub pos: Vec2,
+    pub strength: f32,
+    pub radius: f32,
+}
 pub struct World {
     pub particles: Vec<Particle>,
     pub gravity: Vec2,
@@ -14,6 +20,7 @@ pub struct World {
     pub restitution: f32,
     pub fps: f32,
     pub rect_colliders: Vec<RectCollider>,
+    pub magnets: Vec<Magnet>,
 
     pub WINDOW_WIDTH: u32,
     pub WINDOW_HEIGHT: u32,
@@ -35,6 +42,7 @@ impl World {
             restitution: DEFAULT_RESTITUTION,
             fps: 0.0,
             rect_colliders: Vec::new(),
+            magnets: Vec::new(),
             WINDOW_HEIGHT: 400,
             WINDOW_WIDTH: 600,
         }
@@ -58,6 +66,11 @@ impl World {
 
     pub fn update_positions(&mut self, dt: f32) {
         for p in &mut self.particles {
+            if p.is_magnet {
+                // magnets dont move
+                p.old_pos = p.pos;
+                continue;
+            }
             //dt : delta time Pixel pro sekunde nicht pro frame
             let temp = p.pos;
             let vel = p.pos - p.old_pos;
@@ -74,6 +87,9 @@ impl World {
         let restitution = 0.96; //sehr bouncy verhalten..0.3 weniger bis garkein bounch
 
         for p in &mut self.particles {
+            if p.is_magnet {
+                continue;
+            }
             for c in &self.colliders {
                 let dir = p.pos - c.center; //testen ob der partikel auserhalb der border ist
                 let dist = dir.length();
@@ -96,7 +112,13 @@ impl World {
     pub fn solve_particle_collisions(&mut self) {
         let n = self.particles.len();
         for i in 0..n {
+            if self.particles[i].is_magnet {
+                continue;
+            }
             for j in (i + 1)..n {
+                if self.particles[j].is_magnet {
+                    continue;
+                }
                 let (left, right) = self.particles.split_at_mut(j);
                 let a = &mut left[i];
                 let b = &mut right[0];
@@ -220,6 +242,10 @@ impl World {
             let a = &mut left[i];
             let b = &mut right[0];
 
+            if a.is_magnet || b.is_magnet {
+                continue;
+            }
+
             let dir = b.pos - a.pos;
             let dist = dir.length();
             let min_dist = a.radius + b.radius;
@@ -258,6 +284,7 @@ impl World {
     //ein "Simulationsschritt“ (forces → integration → collisions)
     pub fn step(&mut self, dt: f32) {
         self.apply_forces();
+        self.apply_magnets();
         self.update_positions(dt);
         self.solve_collisions();
         // self.solve_particle_collisions();
@@ -278,6 +305,7 @@ impl World {
         self.gravity = DEFAULT_GRAVITY;
         self.particle_radius = DEFAULT_PARTICLE_RADIUS;
         self.restitution = DEFAULT_RESTITUTION;
+        self.magnets.clear()
     }
 
     pub fn clear_particles(&mut self) {
@@ -404,6 +432,25 @@ impl World {
                 //including mass to the acceleration
                 p1.acc += dir_norm * (gravity_force * p2.mass);
                 p2.acc -= dir_norm * (gravity_force * p1.mass);
+            }
+        }
+    }
+
+    pub fn apply_magnets(&mut self) {
+        for m in &self.magnets {
+            for p in &mut self.particles {
+                let direction = m.pos - p.pos;
+                let dist_sq = direction.length_squared();
+                let radius_sq = m.radius * m.radius;
+
+                if dist_sq < radius_sq && dist_sq > 0.01 {
+                    let dist = dist_sq.sqrt();
+                    let normalize_dir = direction / dist;
+
+                    let force = (m.strength * (1.0 - (dist / m.radius))).clamp(-1000.0, 1000.0);
+
+                    p.acc += normalize_dir * force;
+                }
             }
         }
     }

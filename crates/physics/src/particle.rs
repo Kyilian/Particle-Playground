@@ -7,6 +7,8 @@ pub struct Particle {
     pub acc: Vec2, // force z.b gravity
     pub mass: f32,
     pub radius: f32,
+    pub is_magnet: bool,
+    pub color: [f32; 4],
 }
 
 impl Particle {
@@ -18,6 +20,8 @@ impl Particle {
             acc: Vec2::ZERO,
             mass: 10.0,
             radius: radius,
+            is_magnet: false,
+            color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 
@@ -32,6 +36,8 @@ impl Particle {
             acc: Vec2::ZERO,
             mass: mass,
             radius: radius,
+            is_magnet: false,
+            color: [1.0, 1.0, 1.0, 1.0],
         }
     }
 }

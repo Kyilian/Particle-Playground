@@ -124,6 +124,8 @@ impl Scene for BenchmarkScene {
     ) {
     }
 
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+
     fn reset(&mut self, world: &mut World) {
         world.clear_particles();
         self.bench_running = false;

@@ -1,4 +1,4 @@
-use pp_physics::Particle;
+use pp_physics::{world::Magnet, Particle};
 use wgpu::util::DeviceExt;
 use wgpu::{Device, Queue, SurfaceConfiguration};
 
@@ -335,6 +335,14 @@ impl ParticleRenderer {
         let instances: Vec<ParticleInstance> = particles
             .iter()
             .map(|p| {
+                if p.is_magnet {
+                ParticleInstance {
+                    position: [p.pos.x, p.pos.y],
+                    color: p.color, // Nutze die Farbe des Magneten
+                    radius: p.radius,
+                    _padding: 0.0,
+                }
+            } else {
                 //  calculate speed
                 let velocity = p.pos - p.old_pos;
                 let speed = velocity.length();
@@ -347,14 +355,17 @@ impl ParticleRenderer {
                 let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
                 let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
 
+                let alpha = if p.is_magnet { 0.01 } else { 1.0 };
+
                 ParticleInstance {
                     position: [p.pos.x, p.pos.y],
-                    color: [r, g, b, 1.0],
+                    color: [r, g, b, alpha],
                     radius: p.radius,
                     _padding: 0.0,
                 }
-            })
-            .collect();
+            }
+        })
+        .collect();
 
         //speichert anzahl
         self.instance_count = instances.len() as u32;
@@ -363,6 +374,17 @@ impl ParticleRenderer {
         if !instances.is_empty() {
             queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
         }
+    }
+
+    pub fn draw<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+        if self.instance_count == 0 {
+            return;
+        }
+        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        render_pass.draw(0..6, 0..self.instance_count);
     }
 
     // Rendert alle Partikel in einem Draw-Call
