@@ -60,7 +60,7 @@ impl Scene for NBodyScene {
     ) {
         let mut rng = rand::thread_rng();
         if left_click {
-            let id = world.add_particle(Particle::new(mouse_pos));
+            let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
             println!("Spawned particle #{id} at {:?}", mouse_pos);
         }
 
@@ -70,7 +70,11 @@ impl Scene for NBodyScene {
                 let offset_y = rng.gen_range(-150.0..150.0);
                 let spawn_pos = mouse_pos + Vec2::new(offset_x, offset_y);
 
-                let mut p = Particle::new_with_mass(spawn_pos, rng.gen_range(2.0..10.0));
+                let mut p = Particle::new_with_mass(
+                    spawn_pos,
+                    rng.gen_range(2.0..10.0),
+                    self.particle_radius,
+                );
 
                 let dist_vec = spawn_pos - mouse_pos;
                 let dist = dist_vec.length();
@@ -90,13 +94,15 @@ impl Scene for NBodyScene {
         }
 
         if is_middle {
-            let mut p = Particle::new_with_mass(mouse_pos, 2000.0);
+            let mut p = Particle::new_with_mass(mouse_pos, 2000.0, self.particle_radius);
 
             p.old_pos = p.pos;
 
             world.add_particle(p);
         }
     }
+
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
 
     fn render<'rpass>(
         &self,

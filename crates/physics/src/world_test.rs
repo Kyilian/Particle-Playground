@@ -8,7 +8,7 @@ mod test {
     #[test]
     fn verlet_moves_particle_with_gravity() {
         let mut world = World::new();
-        let id = world.add_particle(Particle::new(Vec2::ZERO));
+        let id = world.add_particle(Particle::new(Vec2::ZERO, 6.0));
 
         world.step(1.0);
         let p = world.particles[id];
@@ -30,6 +30,9 @@ mod test {
             old_pos: (Vec2::ZERO),
             acc: (Vec2::ZERO),
             mass: 10.0,
+            radius: 6.0,
+            is_magnet: false,
+            color: [1.0, 1.0, 1.0, 1.0],
         });
         world.add_circle_collider(CircleCollider {
             center: Vec2::ZERO,
@@ -52,7 +55,7 @@ mod test {
             radius: 10.0,
         });
 
-        let id = world.add_particle(Particle::new(Vec2::new(20.0, 0.0)));
+        let id = world.add_particle(Particle::new(Vec2::new(20.0, 0.0), 6.0));
 
         world.solve_collisions();
 
@@ -73,7 +76,7 @@ mod test {
         world.add_circle_collider(collider);
 
         // Partikel außerhalb, kam von innen → echte Kollision
-        let mut p = Particle::new(Vec2::new(12.0, 0.0));
+        let mut p = Particle::new(Vec2::new(12.0, 0.0), 6.0);
         p.old_pos = Vec2::new(9.0, 0.0);
 
         let id = world.add_particle(p);
@@ -98,8 +101,8 @@ mod test {
     fn particles_separate_when_overlapping() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(5.0, 0.0), 6.0); // overlap (min_dist = 12)
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -116,8 +119,8 @@ mod test {
     fn particles_do_not_move_when_not_overlapping() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(20.0, 0.0), 6.0); // no overlap
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -137,10 +140,10 @@ mod test {
     fn particles_bounce_when_moving_towards_each_other() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
         a.old_pos = Vec2::new(-1.0, 0.0);
 
-        let mut b = Particle::new(Vec2::new(11.0, 0.0)); // overlap
+        let mut b = Particle::new(Vec2::new(11.0, 0.0), 6.0); // overlap
         b.old_pos = Vec2::new(12.0, 0.0);
 
         world.add_particle(a);
@@ -167,8 +170,8 @@ mod test {
     fn particles_with_same_position_get_separated() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(0.0, 0.0), 6.0); // dist == 0
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -186,8 +189,8 @@ mod test {
     fn grid_particles_separate_when_overlapping() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(5.0, 0.0)); // overlap (min_dist = 12)
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(5.0, 0.0), 6.0); // overlap (min_dist = 12)
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -205,8 +208,8 @@ mod test {
     fn grid_particles_do_not_move_when_not_overlapping() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(20.0, 0.0)); // no overlap
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(20.0, 0.0), 6.0); // no overlap
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -227,8 +230,8 @@ mod test {
     fn grid_particles_with_same_position_get_separated() {
         let mut world = World::new();
 
-        let mut a = Particle::new(Vec2::new(0.0, 0.0));
-        let mut b = Particle::new(Vec2::new(0.0, 0.0)); // dist == 0
+        let mut a = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut b = Particle::new(Vec2::new(0.0, 0.0), 6.0); // dist == 0
 
         a.old_pos = a.pos;
         b.old_pos = b.pos;
@@ -247,10 +250,10 @@ mod test {
         let mut w2 = World::new();
 
         // Mix aus Kollision / keine Kollision / diagonal
-        let mut p0 = Particle::new(Vec2::new(0.0, 0.0));
-        let mut p1 = Particle::new(Vec2::new(11.5, 0.0)); // overlap (min_dist=12)
-        let mut p2 = Particle::new(Vec2::new(30.0, 0.0)); // no overlap
-        let mut p3 = Particle::new(Vec2::new(11.5, 11.5)); // diagonal neighbor
+        let mut p0 = Particle::new(Vec2::new(0.0, 0.0), 6.0);
+        let mut p1 = Particle::new(Vec2::new(11.5, 0.0), 6.0); // overlap (min_dist=12)
+        let mut p2 = Particle::new(Vec2::new(30.0, 0.0), 6.0); // no overlap
+        let mut p3 = Particle::new(Vec2::new(11.5, 11.5), 6.0); // diagonal neighbor
 
         for p in [&mut p0, &mut p1, &mut p2, &mut p3] {
             p.old_pos = p.pos; // keine Bewegung, nur overlap resolution
@@ -294,7 +297,7 @@ mod test {
 
         // Spawn particle WAY outside (X=100, Y=100)
         // Max bounds are 50.0. Minus radius 5.0 = 45.0 is the limit.
-        let mut p = Particle::new(Vec2::new(100.0, 100.0));
+        let mut p = Particle::new(Vec2::new(100.0, 100.0), 6.0);
         p.old_pos = Vec2::new(100.0, 100.0); // No velocity
 
         world.add_particle(p);
@@ -320,7 +323,7 @@ mod test {
         // Max X bound is 50.0. Limit is 45.0.
         // Place particle at 46.0 (1.0 pixel inside the wall)
         // Moving Right: old_pos at 40.0 (Velocity +6)
-        let mut p = Particle::new(Vec2::new(46.0, 0.0));
+        let mut p = Particle::new(Vec2::new(46.0, 0.0), 6.0);
         p.old_pos = Vec2::new(40.0, 0.0);
 
         world.add_particle(p);
@@ -349,7 +352,7 @@ mod test {
 
         // Hitting Top/Bottom wall (Y axis)
         // Place at Y = 46.0
-        let mut p = Particle::new(Vec2::new(0.0, 46.0));
+        let mut p = Particle::new(Vec2::new(0.0, 46.0), 6.0);
         p.old_pos = Vec2::new(0.0, 40.0); // Moving Up
 
         world.add_particle(p);

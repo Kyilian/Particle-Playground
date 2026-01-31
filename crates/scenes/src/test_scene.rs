@@ -114,7 +114,7 @@ impl Scene for TestScene {
         let mut rng = rand::thread_rng();
 
         if left_click {
-            let id = world.add_particle(Particle::new(mouse_pos));
+            let id = world.add_particle(Particle::new(mouse_pos, world.particle_radius));
             println!("Spawned particle #{id} at {:?}", mouse_pos);
         }
 
@@ -134,7 +134,7 @@ impl Scene for TestScene {
                 let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
                 let y = rng.gen_range(mouse_pos.y - 20.0..mouse_pos.y + 20.0);
                 let random_pos: Vec2 = Vec2::new(x, y);
-                world.add_particle(Particle::new(random_pos));
+                world.add_particle(Particle::new(random_pos, world.particle_radius));
             }
         }
 
@@ -144,6 +144,8 @@ impl Scene for TestScene {
             self.color = random_color;
         }
     }
+
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
 
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {

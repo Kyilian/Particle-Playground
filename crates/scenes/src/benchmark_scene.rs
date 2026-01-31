@@ -47,7 +47,7 @@ impl BenchmarkScene {
         for i in 0..count {
             let x = (i as f32 - count as f32 * 0.5) * spacing;
 
-            let mut p = Particle::new(Vec2::new(x, y));
+            let mut p = Particle::new(Vec2::new(x, y), self.particle_radius);
             // reinschießen nach unten
             p.old_pos = p.pos - Vec2::new(0.0, self.speed * dt);
 
@@ -123,6 +123,8 @@ impl Scene for BenchmarkScene {
         _is_middle: bool,
     ) {
     }
+
+    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
 
     fn reset(&mut self, world: &mut World) {
         world.clear_particles();

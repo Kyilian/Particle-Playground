@@ -1,4 +1,4 @@
-use pp_physics::Particle;
+use pp_physics::{world::Magnet, Particle};
 use wgpu::util::DeviceExt;
 use wgpu::{Device, Queue, SurfaceConfiguration};
 
@@ -10,7 +10,6 @@ const SHADER_SOURCE: &str = r#"
 struct Globals {
     screen_size_wrapper: vec4<f32>,   // .xy = width, height
     color: vec4<f32>,                 // .rgba = color
-    particle_size_wrapper: vec4<f32>, // .x = size
 };
 
 // Wir binden den Buffer an Gruppe 0, Binding 0
@@ -28,14 +27,16 @@ fn vs_main(
     @location(0) vertex_pos: vec2<f32>,         // Quad-Ecke
     @location(1) instance_pos: vec2<f32>,       // Partikel_Position
     @location(2) instance_color: vec4<f32>,     // Individual color
+    @location(3) instance_radius: f32,          // Partikel_Radius
+
 ) -> VertexOutput {
     var out: VertexOutput; 
 
     let screen_size = globals.screen_size_wrapper.xy; 
-    let particle_size = globals.particle_size_wrapper.x;
+    let particle_size: f32 = (2.0 * instance_radius); 
 
     // quad von -0.5 bis +0.5 auf pixel-größe skalieren
-    let scaled_pos = vertex_pos * particle_size;
+    let scaled_pos = vertex_pos * (2.0 * instance_radius);
 
     //hinzugefügt um den Center in die Mitte zu verschieben für Circle_collider
     let center_offset = screen_size / 2.0;
@@ -76,7 +77,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 pub struct GlobalUniforms {
     pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
     pub _padding: [f32; 4],
-    pub particle_size_wrapper: [f32; 4],
+    pub _padding2: [f32; 4],
 }
 
 // Renderer für Partikel als Kreise mit GPU-Instancing
@@ -100,6 +101,8 @@ pub struct ParticleRenderer {
 struct ParticleInstance {
     position: [f32; 2], // x und y in Fenster
     color: [f32; 4],
+    pub radius: f32, // radius im Fenster
+    _padding: f32,
 }
 
 // ein Eckpunkt eines Quads
@@ -164,6 +167,12 @@ impl ParticleInstance {
                     shader_location: 2,
                     format: wgpu::VertexFormat::Float32x4,
                 },
+                wgpu::VertexAttribute {
+                    offset: (std::mem::size_of::<[f32; 2]>() + std::mem::size_of::<[f32; 4]>())
+                        as wgpu::BufferAddress,
+                    shader_location: 3, // @location(3) is radius
+                    format: wgpu::VertexFormat::Float32,
+                },
             ],
         }
     }
@@ -175,7 +184,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
             _padding: [1.0, 1.0, 1.0, 1.0],
-            particle_size_wrapper: [12.0, 0.0, 0.0, 0.0],
+            _padding2: [1.0, 1.0, 1.0, 1.0],
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -233,7 +242,7 @@ impl ParticleRenderer {
                 entry_point: "vs_main",
                 buffers: &[
                     Vertex::desc(),           //@location(0) für quad geometrie
-                    ParticleInstance::desc(), //@location(1) für partikel position
+                    ParticleInstance::desc(), //@location(1) und @location(2) für partikel position und radius
                 ],
                 compilation_options: Default::default(),
             },
@@ -299,7 +308,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
             _padding: color,
-            particle_size_wrapper: [particle_radius, 0.0, 0.0, 0.0], // these zeros are placeholders because I had problems if i did not used 16 byte blocks
+            _padding2: [particle_radius, 0.0, 0.0, 0.0],
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
@@ -329,21 +338,34 @@ impl ParticleRenderer {
         let instances: Vec<ParticleInstance> = particles
             .iter()
             .map(|p| {
-                //  calculate speed
-                let velocity = p.pos - p.old_pos;
-                let speed = velocity.length();
+                if p.is_magnet {
+                    ParticleInstance {
+                        position: [p.pos.x, p.pos.y],
+                        color: p.color, // Nutze die Farbe des Magneten
+                        radius: p.radius,
+                        _padding: 0.0,
+                    }
+                } else {
+                    //  calculate speed
+                    let velocity = p.pos - p.old_pos;
+                    let speed = velocity.length();
 
-                // maps the speed on a 0.0 to 1.0 scale
-                let t = (speed / max_speed).clamp(0.0, 1.0);
+                    // maps the speed on a 0.0 to 1.0 scale
+                    let t = (speed / max_speed).clamp(0.0, 1.0);
 
-                // gives the partile a color based on its speed
-                let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
-                let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
-                let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
+                    // gives the partile a color based on its speed
+                    let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
+                    let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
+                    let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
 
-                ParticleInstance {
-                    position: [p.pos.x, p.pos.y],
-                    color: [r, g, b, 1.0],
+                    let alpha = if p.is_magnet { 0.01 } else { 1.0 };
+
+                    ParticleInstance {
+                        position: [p.pos.x, p.pos.y],
+                        color: [r, g, b, alpha],
+                        radius: p.radius,
+                        _padding: 0.0,
+                    }
                 }
             })
             .collect();
@@ -355,6 +377,17 @@ impl ParticleRenderer {
         if !instances.is_empty() {
             queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
         }
+    }
+
+    pub fn draw<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
+        if self.instance_count == 0 {
+            return;
+        }
+        render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
+        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+        render_pass.draw(0..6, 0..self.instance_count);
     }
 
     // Rendert alle Partikel in einem Draw-Call
@@ -369,15 +402,6 @@ impl ParticleRenderer {
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
         render_pass.draw(0..6, 0..self.instance_count); //mind. 6 vertices
-    }
-    // passt die größe der spawnenden Partikel an die geänderten Parameter an
-    pub fn update_particle_size(&self, queue: &Queue, size: f32) {
-        let uniforms = GlobalUniforms {
-            screen_size_wrapper: [self.size.0 as f32, self.size.1 as f32, 0.0, 0.0],
-            _padding: [0.0, 1.0, 1.0, 1.0], // color is not used anymore because we render individual colors direclty for interpolation based on speed
-            particle_size_wrapper: [size, 0.0, 0.0, 0.0],
-        };
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 }
 
