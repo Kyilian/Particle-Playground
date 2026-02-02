@@ -1,3 +1,4 @@
+pub use crate::neighbor_grid::NeighborGrid;
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 use std::collections::HashMap;
