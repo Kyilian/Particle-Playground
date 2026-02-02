@@ -14,6 +14,7 @@ pub struct NBodyScene {
     //collider_old: f32,
     rect_size: Vec2,
     rect_size_old: Vec2,
+    ui_has_focus: bool,
 }
 
 impl NBodyScene {
@@ -25,6 +26,7 @@ impl NBodyScene {
             particle_radius: 2.0,
             rect_size: Vec2::new(400.0, 400.0),
             rect_size_old: Vec2::new(400.0, 400.0),
+            ui_has_focus: false,
         }
     }
 }
@@ -58,6 +60,10 @@ impl Scene for NBodyScene {
         left_click: bool,
         is_middle: bool,
     ) {
+        if self.ui_has_focus {
+            return;
+        }
+
         let mut rng = rand::thread_rng();
         if left_click {
             let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
@@ -121,6 +127,8 @@ impl Scene for NBodyScene {
     }
 
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
+        self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
+
         egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");

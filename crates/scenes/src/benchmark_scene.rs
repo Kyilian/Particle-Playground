@@ -15,6 +15,7 @@ pub struct BenchmarkScene {
     accum: f32,
 
     speed: f32,
+    ui_has_focus: bool,
 }
 
 impl BenchmarkScene {
@@ -30,6 +31,7 @@ impl BenchmarkScene {
             particles_per_sec: 1000,
             accum: 0.0,
             speed: 800.0,
+            ui_has_focus: false,
         }
     }
 
@@ -122,6 +124,9 @@ impl Scene for BenchmarkScene {
         _left_click: bool,
         _is_middle: bool,
     ) {
+        if self.ui_has_focus {
+            return;
+        }
     }
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
@@ -131,8 +136,10 @@ impl Scene for BenchmarkScene {
         self.bench_running = false;
         self.accum = 0.0;
     }
-    fn ui(&mut self, ctx: &egui::Context, world: &mut World) {
-        egui::Window::new("Benchmark Scene").show(ctx, |ui| {
+    fn ui(&mut self, _ctx: &egui::Context, world: &mut World) {
+        self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
+
+        egui::Window::new("Benchmark Scene").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
                 let color = if world.fps < 30.0 {
@@ -156,7 +163,7 @@ impl Scene for BenchmarkScene {
             }
 
             // StartStop per Enter
-            if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+            if _ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
                 self.bench_running = !self.bench_running;
                 self.accum = 0.0;
             }
