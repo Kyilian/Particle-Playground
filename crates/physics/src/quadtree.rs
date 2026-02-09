@@ -1,6 +1,8 @@
 use glam::Vec2;
 
 use crate::particle::Particle;
+//Quadtree implementation like in the video https://www.youtube.com/watch?v=nZHjD3cI-EU
+//https://github.com/DeadlockCode/barnes-hut.git
 
 #[derive(Clone, Copy)]
 pub struct Quadrant {
@@ -11,6 +13,13 @@ pub struct Quadrant {
 impl Quadrant {
     //finds the smallest quadrat for the particles
     pub fn new(particle: &[Particle]) -> Self {
+        if particle.is_empty() {
+            return Self {
+                center: Vec2::ZERO,
+                size: 100.0,
+            };
+        }
+
         let mut min_x = f32::MAX;
         let mut min_y = f32::MAX;
         let mut max_x = f32::MIN;
@@ -24,7 +33,7 @@ impl Quadrant {
         }
 
         let center = Vec2::new(min_x + max_x, min_y + max_y) * 0.5;
-        let size = (max_x - min_x).max(max_y - min_y);
+        let size = (max_x - min_x).max(max_y - min_y).max(1.0) * 1.05;
 
         Self { center, size }
     }
@@ -90,10 +99,10 @@ impl Quadtree {
     pub const ROOT: usize = 0;
 
     //not normal heap quadtree, use Vec to store
-    pub fn new(theta: f32, epsion: f32) -> Self {
+    pub fn new(theta: f32, epsilon: f32) -> Self {
         Self {
             t_sq: theta * theta,
-            e_sq: epsion * epsion,
+            e_sq: epsilon * epsilon,
             nodes: Vec::new(),
             parents: Vec::new(),
         }
@@ -125,7 +134,10 @@ impl Quadtree {
         return children;
     }
 
-    pub fn insert(mut self, pos: Vec2, mass: f32) {
+    pub fn insert(&mut self, pos: Vec2, mass: f32) {
+        let mut depth = 0;
+        let max_depth = 64;
+
         let mut node = Self::ROOT;
 
         while self.nodes[node].is_branch() {
@@ -147,8 +159,13 @@ impl Quadtree {
             return;
         }
 
-        //if not empty create new quadrants until we found an empty one
         loop {
+            if depth > max_depth {
+                self.nodes[node].mass += mass;
+                return;
+            }
+            depth += 1;
+
             let children = self.subdivide(node);
 
             let quadrant1 = self.nodes[node].quadrant.find_quadrant(p);
@@ -202,6 +219,7 @@ impl Quadtree {
             let d = n.pos - pos;
             let d_sq = (d.x * d.x) + (d.y * d.y);
 
+            //is a leaf or aproximation
             if n.is_leaf() || n.quadrant.size * n.quadrant.size < d_sq * self.t_sq {
                 let denom = (d_sq + self.e_sq) * d_sq.sqrt();
                 acc += d * (n.mass / denom).min(f32::MAX);

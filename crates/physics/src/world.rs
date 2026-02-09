@@ -1,3 +1,5 @@
+use crate::galaxy;
+use crate::quadtree::{Quadrant, Quadtree};
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 use std::collections::HashMap;
@@ -22,6 +24,8 @@ pub struct World {
     pub rect_colliders: Vec<RectCollider>,
     pub magnets: Vec<Magnet>,
 
+    pub quadtree: Quadtree,
+
     pub WINDOW_WIDTH: u32,
     pub WINDOW_HEIGHT: u32,
 }
@@ -45,6 +49,8 @@ impl World {
             magnets: Vec::new(),
             WINDOW_HEIGHT: 400,
             WINDOW_WIDTH: 600,
+
+            quadtree: Quadtree::new(0.5, 100.0),
         }
     }
 
@@ -298,6 +304,13 @@ impl World {
         self.solve_rect_collisions();
     }
 
+    pub fn barnes_hut_nbody_step(&mut self, dt: f32) {
+        self.apply_gravity_barnes_hut();
+        self.update_positions(dt);
+        self.solve_rect_collisions();
+        self.solve_particle_collisions_grid();
+    }
+
     //resets all particles
     pub fn clear(&mut self) {
         self.particles.clear();
@@ -436,6 +449,27 @@ impl World {
         }
     }
 
+    pub fn apply_gravity_barnes_hut(&mut self) {
+        if self.particles.len() < 2 {
+            return;
+        }
+        let root_quadrant = Quadrant::new(&self.particles);
+
+        self.quadtree.clear(root_quadrant);
+
+        for p in &self.particles {
+            self.quadtree.insert(p.pos, p.mass);
+        }
+
+        let gravity = self.gravity.y; //default gravity
+
+        self.quadtree.propagate();
+
+        for particle in &mut self.particles {
+            particle.acc = self.quadtree.acc(particle.pos) * gravity;
+        }
+    }
+
     pub fn apply_magnets(&mut self) {
         for m in &self.magnets {
             for p in &mut self.particles {
@@ -452,6 +486,14 @@ impl World {
                     p.acc += normalize_dir * force;
                 }
             }
+        }
+    }
+
+    pub fn add_galaxy(&mut self, n: usize) {
+        let galaxy = galaxy(n);
+
+        for p in galaxy {
+            self.add_particle(p);
         }
     }
 }

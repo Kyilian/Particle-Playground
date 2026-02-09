@@ -4,7 +4,7 @@ use pp_physics::{world, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
-pub struct NBodyScene {
+pub struct BarnesHutNbody {
     gravity: f32,
     mass: f32,
     particle_radius: f32,
@@ -16,10 +16,10 @@ pub struct NBodyScene {
     rect_size_old: Vec2,
 }
 
-impl NBodyScene {
+impl BarnesHutNbody {
     pub fn new() -> Self {
         Self {
-            gravity: 0.0,
+            gravity: 10.0,
             mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
@@ -29,27 +29,18 @@ impl NBodyScene {
     }
 }
 
-impl Default for NBodyScene {
+impl Default for BarnesHutNbody {
     fn default() -> Self {
-        NBodyScene::new()
+        BarnesHutNbody::new()
     }
 }
 
-impl Scene for NBodyScene {
+impl Scene for BarnesHutNbody {
     fn update(&mut self, _world: &mut pp_physics::World, _dt: f32) {
         _world.gravity = Vec2::new(0.0, self.gravity);
-        _world.nbody_step(_dt);
+        _world.barnes_hut_nbody_step(_dt);
         _world.particle_radius = self.particle_radius;
-
-        _world.clear_rect_collider();
-
-        _world.add_rect_collider(RectCollider {
-            center: Vec2::new(0.0, 0.0),
-            width: _world.WINDOW_WIDTH as f32,
-            height: _world.WINDOW_HEIGHT as f32,
-        });
     }
-
     fn on_click(
         &mut self,
         world: &mut World,
@@ -94,7 +85,8 @@ impl Scene for NBodyScene {
         }
 
         if is_middle {
-            let mut p = Particle::new_with_mass(mouse_pos, 2000.0, self.particle_radius);
+            let r = self.particle_radius * 3.0;
+            let mut p = Particle::new_with_mass(mouse_pos, 20000000000000000000.0, r);
 
             p.old_pos = p.pos;
 
@@ -140,10 +132,18 @@ impl Scene for NBodyScene {
             ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
             ui.separator();
 
+            ui.add(egui::Slider::new(&mut self.gravity, 0.0..=2000.0).text("Gravity"));
+            ui.separator();
+
             ui.label(format!("Partikel: {}", _world.particles.len()));
 
             if ui.button("Alles zurücksetzen").clicked() {
                 self.reset(_world);
+            }
+            ui.separator();
+
+            if ui.button("Spwan Galaxy").clicked() {
+                _world.add_galaxy(5000);
             }
         });
     }

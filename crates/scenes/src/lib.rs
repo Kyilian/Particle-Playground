@@ -1,9 +1,11 @@
+pub mod barnes_hut_nbody;
 pub mod benchmark_scene;
 pub mod falling_particles;
 pub mod nbody_scene;
 pub mod scenes;
 pub mod test_scene;
 
+pub use barnes_hut_nbody::BarnesHutNbody;
 pub use benchmark_scene::BenchmarkScene;
 pub use falling_particles::FallingParticles;
 pub use nbody_scene::NBodyScene;
@@ -19,6 +21,7 @@ pub enum SceneType {
     BenchmarkScene,
     TestScene,
     NBodyScene, // LiquidSimulation for later
+    BarnesHutNbody,
 }
 
 impl SceneType {
@@ -30,6 +33,7 @@ impl SceneType {
             SceneType::TestScene,
             SceneType::NBodyScene,
             // SceneType::LiquidSimulation
+            SceneType::BarnesHutNbody,
         ]
     }
 
@@ -40,6 +44,7 @@ impl SceneType {
             SceneType::TestScene => "Test Scene",
             SceneType::NBodyScene => "N-Body Scene",
             // SceneType::WaterSimulation => "Water Simulation",
+            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
         }
     }
 
@@ -48,8 +53,9 @@ impl SceneType {
             SceneType::FallingParticles => "Particles falling down to customizable gravity",
             SceneType::BenchmarkScene => "Performance-Test: Continuously spawns particles until the fps fall under 30.",
             SceneType::TestScene => "Test-Scene with different collider-types (circle and triangle).",
-            SceneType::NBodyScene => "N-Body gravitation simulation, left-click to spawn a particle with a stronger pull."
+            SceneType::NBodyScene => "N-Body gravitation simulation, left-click to spawn a particle with a stronger pull.",
             // SceneType::LiquidSimulation => TBD
+            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
         }
     }
 
@@ -70,9 +76,10 @@ impl SceneType {
                 Box::new(TestScene::new())
             }
             SceneType::NBodyScene => Box::new(NBodyScene::new()), // SceneType::LiquidSimulation => {
-                                                                  //    LiquidSimulation::init_world(world);
-                                                                  //    Box::new(LiquidSimulation::new())
-                                                                  // }
+            //    LiquidSimulation::init_world(world);
+            //    Box::new(LiquidSimulation::new())
+            // }
+            SceneType::BarnesHutNbody => Box::new(BarnesHutNbody::new()),
         }
     }
 }
