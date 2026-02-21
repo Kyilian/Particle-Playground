@@ -47,8 +47,8 @@ impl World {
             fps: 0.0,
             rect_colliders: Vec::new(),
             magnets: Vec::new(),
-            WINDOW_HEIGHT: 400,
-            WINDOW_WIDTH: 600,
+            WINDOW_HEIGHT: 600,
+            WINDOW_WIDTH: 800,
 
             quadtree: Quadtree::new(0.5, 100.0),
         }

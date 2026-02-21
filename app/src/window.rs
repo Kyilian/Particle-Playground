@@ -13,7 +13,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-const WINDOW_WIDTH: u32 = 800;
+const WINDOW_WIDTH: u32 = 1000;
 const WINDOW_HEIGHT: u32 = 600;
 
 enum AppState {
@@ -304,18 +304,19 @@ impl RenderWindow {
             AppState::Launcher { selected_scene } => {
                 egui::CentralPanel::default().show(&ctx, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.add_space(40.0);
+                        ui.set_max_size(egui::vec2(400.0, 600.0));
+                        ui.add_space(ui.available_height() * 0.15);
                         ui.heading("🎮 Particle Playground");
                         ui.add_space(10.0);
                         ui.label("Wähle eine Simulation:");
                         ui.add_space(30.0);
-                    });
 
-                    ui.vertical_centered(|ui| {
+                        ui.set_max_width(500.0);
+
                         for scene_type in SceneType::all() {
                             let is_selected = *selected_scene == Some(*scene_type);
 
-                            egui::Frame::none()
+                            let response = egui::Frame::none()
                                 .fill(if is_selected {
                                     egui::Color32::from_rgb(60, 60, 80)
                                 } else {
@@ -324,7 +325,8 @@ impl RenderWindow {
                                 .rounding(8.0)
                                 .inner_margin(12.0)
                                 .show(ui, |ui| {
-                                    ui.set_min_width(300.0);
+                                    ui.set_min_width(ui.available_width());
+
                                     ui.horizontal(|ui| {
                                         ui.radio_value(selected_scene, Some(*scene_type), "");
                                         ui.vertical(|ui| {
@@ -332,15 +334,24 @@ impl RenderWindow {
                                             ui.label(scene_type.description());
                                         });
                                     });
-                                });
+                                })
+                                .response
+                                .interact(egui::Sense::click());
+
+                            let response = response.interact(egui::Sense::click());
+                            if response.clicked() {
+                                *selected_scene = Some(*scene_type);
+                            }
 
                             ui.add_space(8.0);
                         }
+                    });
 
-                        ui.add_space(20.0);
+                    ui.add_space(20.0);
 
-                        let start_enabled = selected_scene.is_some();
+                    let start_enabled = selected_scene.is_some();
 
+                    ui.vertical_centered(|ui| {
                         if ui
                             .add_enabled(
                                 start_enabled,
