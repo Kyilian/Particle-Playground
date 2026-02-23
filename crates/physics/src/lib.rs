@@ -5,6 +5,9 @@ pub mod rect_collider;
 pub mod world;
 pub mod world_test;
 
+mod world_collisions;
+mod world_forces;
+
 pub use collider::CircleCollider;
 pub use neighbor_grid::NeighborGrid;
 pub use particle::Particle;
