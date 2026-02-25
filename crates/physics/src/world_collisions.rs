@@ -1,6 +1,6 @@
 use crate::World;
-use std::collections::HashMap;
 use glam::Vec2;
+use std::collections::HashMap;
 
 impl World {
     pub fn solve_collisions(&mut self) {
