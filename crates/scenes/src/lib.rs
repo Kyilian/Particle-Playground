@@ -1,9 +1,11 @@
 pub mod barnes_hut_nbody;
 pub mod benchmark_scene;
 pub mod falling_particles;
+mod lavalamp_scene;
 pub mod nbody_scene;
 pub mod scenes;
 pub mod test_scene;
+pub use lavalamp_scene::LavaLampScene;
 
 pub use barnes_hut_nbody::BarnesHutNbody;
 pub use benchmark_scene::BenchmarkScene;
@@ -22,6 +24,7 @@ pub enum SceneType {
     TestScene,
     NBodyScene, // LiquidSimulation for later
     BarnesHutNbody,
+    LavaLamp,
 }
 
 impl SceneType {
@@ -34,6 +37,7 @@ impl SceneType {
             SceneType::NBodyScene,
             // SceneType::LiquidSimulation
             SceneType::BarnesHutNbody,
+            SceneType::LavaLamp,
         ]
     }
 
@@ -45,6 +49,7 @@ impl SceneType {
             SceneType::NBodyScene => "N-Body Scene",
             // SceneType::WaterSimulation => "Water Simulation",
             SceneType::BarnesHutNbody => "Barnes Hut N-Body",
+            SceneType::LavaLamp => "Lava Lamp",
         }
     }
 
@@ -56,6 +61,7 @@ impl SceneType {
             SceneType::NBodyScene => "N-Body gravitation simulation, left-click to spawn a particle with a stronger pull.",
             // SceneType::LiquidSimulation => TBD
             SceneType::BarnesHutNbody => "Barnes Hut N-Body",
+            SceneType::LavaLamp => "Lava Lamp",
         }
     }
 
@@ -80,6 +86,7 @@ impl SceneType {
             //    Box::new(LiquidSimulation::new())
             // }
             SceneType::BarnesHutNbody => Box::new(BarnesHutNbody::new()),
+            SceneType::LavaLamp => Box::new(LavaLampScene::new()),
         }
     }
 }
