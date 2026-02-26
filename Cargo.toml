@@ -41,7 +41,5 @@ criterion = "0.8.0"
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
-pp_input =  { path = "./crates/input" }
 pp_gui =    { path = "./crates/gui" }
-pp_common = { path = "./crates/common" }
 pp_app ={ path= "./app"}

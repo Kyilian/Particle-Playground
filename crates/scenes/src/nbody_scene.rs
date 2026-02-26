@@ -12,8 +12,6 @@ pub struct NBodyScene {
     color: [f32; 4],
     //pub collider_radius: f32,
     //collider_old: f32,
-    rect_size: Vec2,
-    rect_size_old: Vec2,
     ui_has_focus: bool,
 }
 
@@ -24,8 +22,6 @@ impl NBodyScene {
             mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
-            rect_size: Vec2::new(400.0, 400.0),
-            rect_size_old: Vec2::new(400.0, 400.0),
             ui_has_focus: false,
         }
     }
@@ -47,8 +43,8 @@ impl Scene for NBodyScene {
 
         _world.add_rect_collider(RectCollider {
             center: Vec2::new(0.0, 0.0),
-            width: _world.WINDOW_WIDTH as f32,
-            height: _world.WINDOW_HEIGHT as f32,
+            width: _world.window_width as f32,
+            height: _world.window_height as f32,
         });
     }
 
@@ -129,7 +125,7 @@ impl Scene for NBodyScene {
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
         self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
 
-        egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
+        egui::Window::new("N-Body Simulation").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 

@@ -1,5 +1,6 @@
 #[cfg(test)]
-mod test { // collider tests generated with Claude
+mod test {
+    // collider tests generated with Claude
 
     use crate::{CircleCollider, Particle, World};
     use glam::Vec2;

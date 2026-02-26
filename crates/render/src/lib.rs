@@ -20,8 +20,8 @@ mod tests {
 
     #[test]
     fn test_window_dimensions() {
-        assert_eq!(WINDOW_HEIGHT, 600);
         assert_eq!(WINDOW_WIDTH, 800);
+        assert_eq!(WINDOW_HEIGHT, 600);
     }
 
     #[test]

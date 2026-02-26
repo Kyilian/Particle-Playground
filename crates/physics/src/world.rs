@@ -22,8 +22,8 @@ pub struct World {
     pub rect_colliders: Vec<RectCollider>,
     pub magnets: Vec<Magnet>,
 
-    pub WINDOW_WIDTH: u32,
-    pub WINDOW_HEIGHT: u32,
+    pub window_width: u32,
+    pub window_height: u32,
 }
 
 impl Default for World {
@@ -43,8 +43,8 @@ impl World {
             fps: 0.0,
             rect_colliders: Vec::new(),
             magnets: Vec::new(),
-            WINDOW_HEIGHT: 400,
-            WINDOW_WIDTH: 600,
+            window_height: 400,
+            window_width: 600,
         }
     }
 
