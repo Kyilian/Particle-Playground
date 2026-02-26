@@ -8,12 +8,12 @@ pub struct BarnesHutNbody {
     gravity: f32,
     mass: f32,
     particle_radius: f32,
-
+    camera_zoom: f32,
+    camera_offset: Vec2,
     color: [f32; 4],
-    //pub collider_radius: f32,
-    //collider_old: f32,
-    rect_size: Vec2,
-    rect_size_old: Vec2,
+
+    is_dragging: bool,
+    last_mouse_pos: Vec2,
 }
 
 impl BarnesHutNbody {
@@ -23,8 +23,10 @@ impl BarnesHutNbody {
             mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
-            rect_size: Vec2::new(400.0, 400.0),
-            rect_size_old: Vec2::new(400.0, 400.0),
+            camera_zoom: 1.0,
+            camera_offset: Vec2::ZERO,
+            is_dragging: false,
+            last_mouse_pos: Vec2::ZERO,
         }
     }
 }
@@ -37,7 +39,7 @@ impl Default for BarnesHutNbody {
 
 impl Scene for BarnesHutNbody {
     fn update(&mut self, _world: &mut pp_physics::World, _dt: f32) {
-        _world.gravity = Vec2::new(0.0, self.gravity);
+        _world.gravity = Vec2::ZERO;
         _world.barnes_hut_nbody_step(_dt);
         _world.particle_radius = self.particle_radius;
     }
@@ -50,16 +52,19 @@ impl Scene for BarnesHutNbody {
         is_middle: bool,
     ) {
         let mut rng = rand::thread_rng();
+
+        let world_mouse_pos = (mouse_pos - self.camera_offset) / self.camera_zoom;
+
         if left_click {
-            let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
-            println!("Spawned particle #{id} at {:?}", mouse_pos);
+            let id = world.add_particle(Particle::new(world_mouse_pos, self.particle_radius));
+            println!("Spawned particle #{id} at {:?}", world_mouse_pos);
         }
 
         if right_click {
             for _ in 0..100 {
                 let offset_x = rng.gen_range(-150.0..150.0);
                 let offset_y = rng.gen_range(-150.0..150.0);
-                let spawn_pos = mouse_pos + Vec2::new(offset_x, offset_y);
+                let spawn_pos = world_mouse_pos + Vec2::new(offset_x, offset_y);
 
                 let mut p = Particle::new_with_mass(
                     spawn_pos,
@@ -85,8 +90,10 @@ impl Scene for BarnesHutNbody {
         }
 
         if is_middle {
+            self.is_dragging = true;
+            self.last_mouse_pos = mouse_pos;
             let r = self.particle_radius * 3.0;
-            let mut p = Particle::new_with_mass(mouse_pos, 20000000000000000000.0, r);
+            let mut p = Particle::new_with_mass(world_mouse_pos, 20000000000000000000.0, r);
 
             p.old_pos = p.pos;
 
@@ -94,7 +101,38 @@ impl Scene for BarnesHutNbody {
         }
     }
 
-    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn handle_scroll(&mut self, _world: &mut World, mouse_pos: Vec2, scroll_y: f32) {
+        let old_zoom = self.camera_zoom;
+
+        self.camera_zoom += scroll_y * 0.1;
+        self.camera_zoom = self.camera_zoom.clamp(0.1, 100.0);
+
+        if self.camera_zoom == old_zoom {
+            return;
+        }
+
+        let world_mouse_pos = (mouse_pos - self.camera_offset) / old_zoom;
+        self.camera_offset = mouse_pos - (world_mouse_pos * self.camera_zoom);
+
+        println!("Zoom zur Maus! Neuer Zoom: {:.2}", self.camera_zoom);
+    }
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {
+        if self.is_dragging {
+            let delta = _mouse_pos - self.last_mouse_pos;
+            self.camera_offset += delta;
+            self.last_mouse_pos = _mouse_pos;
+        }
+    }
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+        self.is_dragging = false;
+    }
 
     fn render<'rpass>(
         &self,
@@ -102,8 +140,12 @@ impl Scene for BarnesHutNbody {
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
-        ctx.particle_renderer
-            .update_render_settings(ctx.queue, self.color, self.particle_radius);
+        ctx.particle_renderer.update_render_settings(
+            ctx.queue,
+            self.color,
+            self.camera_offset,
+            self.camera_zoom,
+        );
 
         ctx.particle_renderer.render(render_pass);
     }
@@ -142,7 +184,7 @@ impl Scene for BarnesHutNbody {
             }
             ui.separator();
 
-            if ui.button("Spwan Galaxy").clicked() {
+            if ui.button("Spawn Galaxy").clicked() {
                 _world.add_galaxy(5000);
             }
         });

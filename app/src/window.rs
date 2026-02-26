@@ -193,17 +193,27 @@ impl RenderWindow {
                                 position.x as f32 - half_width,
                                 position.y as f32 - half_height,
                             );
+                            if let AppState::Running { scene, world, .. } =
+                                &mut render_window.app_state
+                            {
+                                scene.on_mouse_move(world, mouse_pos);
+                            }
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
-                            if *state == ElementState::Pressed {
-                                if let AppState::Running { scene, world, .. } =
-                                    &mut render_window.app_state
-                                {
-                                    let is_left = *button == MouseButton::Left;
-                                    let is_right = *button == MouseButton::Right;
-                                    let is_middle = *button == MouseButton::Middle;
+                            let is_left = *button == MouseButton::Left;
+                            let is_right = *button == MouseButton::Right;
+                            let is_middle = *button == MouseButton::Middle;
 
+                            if let AppState::Running { scene, world, .. } =
+                                &mut render_window.app_state
+                            {
+                                if *state == ElementState::Pressed {
                                     scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
+                                } else if *state == ElementState::Released {
+                                    // --- HIER NEU EINFÜGEN ---
+                                    scene.on_mouse_release(
+                                        world, mouse_pos, is_right, is_left, is_middle,
+                                    );
                                 }
                             }
                         }

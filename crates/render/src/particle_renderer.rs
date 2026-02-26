@@ -10,6 +10,7 @@ const SHADER_SOURCE: &str = r#"
 struct Globals {
     screen_size_wrapper: vec4<f32>,   // .xy = width, height
     color: vec4<f32>,                 // .rgba = color
+    camera: vec4<f32>           // .xy = offset to , .z = zoom
 };
 
 // Wir binden den Buffer an Gruppe 0, Binding 0
@@ -33,16 +34,18 @@ fn vs_main(
     var out: VertexOutput; 
 
     let screen_size = globals.screen_size_wrapper.xy; 
-    let particle_size: f32 = (2.0 * instance_radius); 
+    let camera_offset = globals.camera.xy;
+    let zoom = globals.camera.z; 
 
     // quad von -0.5 bis +0.5 auf pixel-größe skalieren
-    let scaled_pos = vertex_pos * (2.0 * instance_radius);
+    let scaled_pos = vertex_pos * (2.0 * instance_radius)*zoom;
 
     //hinzugefügt um den Center in die Mitte zu verschieben für Circle_collider
     let center_offset = screen_size / 2.0;
+    let world_pos = (instance_pos * zoom) + camera_offset;
 
     // partikel position im screen-space verschieben
-    let screen_pos = scaled_pos + instance_pos + center_offset;
+    let screen_pos = scaled_pos + world_pos + center_offset;
 
     // zu Pixel koordinaten konvertieren (normalized device coordinates)
     let ndc_x = (screen_pos.x / screen_size.x) * 2.0 - 1.0;
@@ -77,7 +80,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 pub struct GlobalUniforms {
     pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
     pub _padding: [f32; 4],
-    pub _padding2: [f32; 4],
+    pub camera: [f32; 4],
 }
 
 // Renderer für Partikel als Kreise mit GPU-Instancing
@@ -184,7 +187,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
             _padding: [1.0, 1.0, 1.0, 1.0],
-            _padding2: [1.0, 1.0, 1.0, 1.0],
+            camera: [1.0, 1.0, 1.0, 1.0],
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -301,14 +304,20 @@ impl ParticleRenderer {
     }
 
     //To call the scene
-    pub fn update_render_settings(&self, queue: &Queue, color: [f32; 4], particle_radius: f32) {
+    pub fn update_render_settings(
+        &self,
+        queue: &Queue,
+        color: [f32; 4],
+        camera_offset: glam::Vec2,
+        zoom: f32,
+    ) {
         let width = self.size.0 as f32;
         let height = self.size.1 as f32;
 
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
             _padding: color,
-            _padding2: [particle_radius, 0.0, 0.0, 0.0],
+            camera: [camera_offset.x, camera_offset.y, zoom, 0.0],
         };
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));

@@ -12,6 +12,9 @@ pub struct LavaLampScene {
     rect_height: f32,
     particles: i16,
     change_sized: f32,
+
+    camera_offset: Vec2,
+    camera_zoom: f32,
 }
 
 impl LavaLampScene {
@@ -25,6 +28,9 @@ impl LavaLampScene {
             rect_height: 500.0,
             particles: 400,
             change_sized: 1.0,
+
+            camera_offset: Vec2::ZERO,
+            camera_zoom: 1.0,
         }
     }
 }
@@ -83,8 +89,12 @@ impl Scene for LavaLampScene {
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
-        ctx.particle_renderer
-            .update_render_settings(ctx.queue, [0.0; 4], self.particle_radius);
+        ctx.particle_renderer.update_render_settings(
+            ctx.queue,
+            [0.0; 4],
+            self.camera_offset,
+            self.camera_zoom,
+        );
         ctx.particle_renderer.render(render_pass);
     }
 
@@ -118,6 +128,16 @@ impl Scene for LavaLampScene {
     }
 
     fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+    }
 
     fn reset(&mut self, world: &mut World) {
         world.clear_particles();
