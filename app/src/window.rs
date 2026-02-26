@@ -146,17 +146,17 @@ impl RenderWindow {
             egui_state,
         };
 
-        // physics world + mausposition
+        // physics world + mouse position
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
-        const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
-        let mut accumulator = 0.0; // "Zeit-Speicher"
+        const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz physics
+        let mut accumulator = 0.0; // "time-memory"
 
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
-                // 1. HAUPT-BLOCK: FENSTER EVENTS
+                // 1. MAIN BLOCK: WINDOW EVENTS
                 Event::WindowEvent {
                     event: ref win_event,
                     ..
@@ -165,8 +165,8 @@ impl RenderWindow {
                         .egui_state
                         .on_window_event(&*window, &win_event);
 
-                    // ÄNDERUNG: Hier stand vorher 'match event'.
-                    // Wir matchen jetzt direkt auf 'win_event', damit wir die Struktur nicht doppeln.
+                    // CHANGE: here stood "match event" before
+                    // we now match directly on "win_event, so the strukture isn't duplicated
                     match win_event {
                         WindowEvent::CloseRequested => {
                             elwt.exit();
@@ -174,7 +174,7 @@ impl RenderWindow {
                         WindowEvent::KeyboardInput { event, .. } => {
                             if event.state == ElementState::Pressed {
                                 if let Key::Named(NamedKey::Escape) = event.logical_key {
-                                    // ESC: Zurück zum Launcher
+                                    // ESC: back to launcher
                                     match &render_window.app_state {
                                         AppState::Running { .. } => {
                                             render_window.return_to_launcher();
@@ -212,7 +212,7 @@ impl RenderWindow {
                                 winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
                                 winit::event::MouseScrollDelta::PixelDelta(pos) => {
                                     pos.y as f32 * 0.1
-                                } // Pixel-Scroll normalisieren
+                                } // normalize pixel-scroll
                             };
 
                             if let AppState::Running { scene, world, .. } =

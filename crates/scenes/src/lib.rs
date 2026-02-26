@@ -39,7 +39,7 @@ impl SceneType {
             SceneType::BenchmarkScene => "Benchmark Scene",
             SceneType::TestScene => "Test Scene",
             SceneType::NBodyScene => "N-Body Scene",
-            // SceneType::WaterSimulation => "Water Simulation",
+            // SceneType::LiquidSimulation => "Water Simulation",
         }
     }
 

@@ -1,7 +1,7 @@
 use glam::Vec2;
 use std::collections::HashMap;
 
-//Für Position Based Fluids implementation nach Miles Macklin und Matthias Mueller
+// for position based fluid implementation after Miles Macklin and Matthias Mueller
 
 #[derive(Default)]
 pub struct NeighborGrid {
@@ -31,7 +31,7 @@ impl NeighborGrid {
         self.buckets.clear();
     }
 
-    //Baut grid aus nur Partikelposition ohne Partikel ganz zu kennen
+    // build grid from only particle position without recognizing the entire particle
     pub fn rebuild_from_particles<P>(
         &mut self,
         particles: &[P],
@@ -45,7 +45,7 @@ impl NeighborGrid {
         }
     }
 
-    //nachbarn im Radius suchen
+    //search neighbbour in radius
     pub fn for_each_neighbor_in_radius<F>(&self, positions: &[Vec2], i: usize, h: f32, mut f: F)
     where
         F: FnMut(usize),
@@ -62,7 +62,7 @@ impl NeighborGrid {
                 };
 
                 for &j in list {
-                    // Distanztest
+                    // distance test
                     if j == i {
                         continue;
                     }
@@ -76,7 +76,7 @@ impl NeighborGrid {
     }
 }
 
-//Unit test generated with ChatGPT
+// unit test generated with ChatGPT
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -86,17 +86,17 @@ mod tests {
     fn finds_neighbors_within_radius() {
         let mut grid = NeighborGrid::new(1.0);
 
-        // Drei Partikel
+        // 3 particles
         let positions = vec![
             Vec2::new(0.0, 0.0), // 0
-            Vec2::new(0.5, 0.0), // 1 (nah)
-            Vec2::new(2.0, 0.0), // 2 (weit weg)
+            Vec2::new(0.5, 0.0), // 1 (close)
+            Vec2::new(2.0, 0.0), // 2 (further away)
         ];
 
-        // Grid aufbauen
+        // build grid
         grid.rebuild_from_particles(&positions, |p| *p);
 
-        // Nachbarn von Partikel 0 sammeln
+        // capture neighbours of particle 0
         let mut neighbors = Vec::new();
         grid.for_each_neighbor_in_radius(&positions, 0, 1.0, |j| {
             neighbors.push(j);
@@ -110,8 +110,8 @@ mod tests {
         let mut grid = NeighborGrid::new(1.0);
 
         let positions = vec![
-            Vec2::new(0.99, 0.0), // Zelle (0,0)
-            Vec2::new(1.01, 0.0), // Zelle (1,0)
+            Vec2::new(0.99, 0.0), // Grid (0,0)
+            Vec2::new(1.01, 0.0), // Grid (1,0)
         ];
 
         grid.rebuild_from_particles(&positions, |p| *p);

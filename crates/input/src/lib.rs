@@ -22,12 +22,12 @@ impl InputState {
 
     pub fn handle_window_event(&mut self, event: &WindowEvent) {
         match event {
-            // mausosition bei move speichern
+            // save mouse position on move
             WindowEvent::CursorMoved { position, .. } => {
                 self.cursor_pos = (position.x as f32, position.y as f32);
             }
 
-            // links-/rechtsklick
+            // left-/rightclick
             WindowEvent::MouseInput { state, button, .. } => {
                 let pressed = *state == ElementState::Pressed;
                 match button {
