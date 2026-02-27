@@ -1,9 +1,9 @@
-use pp_physics::{world::Magnet, Particle};
+use pp_physics::Particle;
 use wgpu::util::DeviceExt;
 use wgpu::{Device, Queue, SurfaceConfiguration};
 
 // WGSL Shader Code (WebGPU Shading Language)
-// Wird auf der GPU für jeden Partikel ausgeführt
+// gets executed for every particle on the GPU
 const SHADER_SOURCE: &str = r#"
 // Vertex Shader Output / Fragment Shader Input
 
@@ -12,22 +12,22 @@ struct Globals {
     color: vec4<f32>,                 // .rgba = color
 };
 
-// Wir binden den Buffer an Gruppe 0, Binding 0
+// we bind the buffer to group 0, Binding 0
 @group(0) @binding(0) var<uniform> globals: Globals;
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) uv: vec2<f32>, // Koordinate für Kreis berechnung
-    @location(1) color: vec4<f32>, //gives the color of each particle seperatly to the GPU
+    @location(0) uv: vec2<f32>, // coordinates for circle calculation
+    @location(1) color: vec4<f32>, // gives the color of each particle seperatly to the GPU
 };
 
 // Vertex Shader
 @vertex
 fn vs_main(
-    @location(0) vertex_pos: vec2<f32>,         // Quad-Ecke
-    @location(1) instance_pos: vec2<f32>,       // Partikel_Position
+    @location(0) vertex_pos: vec2<f32>,         // Quad-Corner
+    @location(1) instance_pos: vec2<f32>,       // Particle_Position
     @location(2) instance_color: vec4<f32>,     // Individual color
-    @location(3) instance_radius: f32,          // Partikel_Radius
+    @location(3) instance_radius: f32,          // Particle_Radius
 
 ) -> VertexOutput {
     var out: VertexOutput; 
@@ -35,36 +35,36 @@ fn vs_main(
     let screen_size = globals.screen_size_wrapper.xy; 
     let particle_size: f32 = (2.0 * instance_radius); 
 
-    // quad von -0.5 bis +0.5 auf pixel-größe skalieren
+    // quad from -0.5 to +0.5 on pixel-size skalable
     let scaled_pos = vertex_pos * (2.0 * instance_radius);
 
-    //hinzugefügt um den Center in die Mitte zu verschieben für Circle_collider
+    // added to move the center to the middle for Circle_collider
     let center_offset = screen_size / 2.0;
 
-    // partikel position im screen-space verschieben
+    // move partikel position in screen-space
     let screen_pos = scaled_pos + instance_pos + center_offset;
 
-    // zu Pixel koordinaten konvertieren (normalized device coordinates)
+    // convert to pixel coordinates (normalized device coordinates)
     let ndc_x = (screen_pos.x / screen_size.x) * 2.0 - 1.0;
     let ndc_y = -((screen_pos.y / screen_size.y) * 2.0 - 1.0);
 
     out.clip_position = vec4<f32>(ndc_x, ndc_y, 0.0, 1.0);
 
-    // uv koordinate für fragment shader setzen
-    // Quad Ecken werden zu -1 bis +1 für Distanz berechnung
-    out.uv = vertex_pos * 2.0; //UV-Koordinaten für Kreis-Test im Fragment Shader
+    // set uv coordinates for fragment shader 
+    // Quad corner turn from -1 to +1 for distance calculation
+    out.uv = vertex_pos * 2.0; // UV-Koordinaten for circle-test in fragment shader
 
     out.color = instance_color;
 
     return out;
 }
 
-//Fragment Shader
+// Fragment Shader
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let dist = length(in.uv);
     if (dist > 1.0) {
-        discard;    // wenn Pixel außerhalb des Kreises wird er nicht gerendert
+        discard;    // if pixel is outside of the circle it doesn't get rendered
     }
 
     // Color of the pixels is determined in the scene 
@@ -75,48 +75,48 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlobalUniforms {
-    pub screen_size_wrapper: [f32; 4], //two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
+    pub screen_size_wrapper: [f32; 4], // two for size and two unused to get 16 Byte blocks. I had problems if they were bigger or smaller.
     pub _padding: [f32; 4],
     pub _padding2: [f32; 4],
 }
 
-// Renderer für Partikel als Kreise mit GPU-Instancing
-// jeder partikel wird als kleines Quad (2 Dreiecke) dargestellt,
-// der Fragment Shader macht daraus einen Kreis.
+// renderer for particles as circles with FPU-instancing
+// each particle is shown as small quad (2 triangles)
+// the fragment shaders turns these into a circle
 pub struct ParticleRenderer {
-    render_pipeline: wgpu::RenderPipeline, // GPU Pipeline für Rendering
-    vertex_buffer: wgpu::Buffer,           // Quad Geometrie
-    instance_buffer: wgpu::Buffer,         // Partikel-positionen
-    uniform_buffer: wgpu::Buffer,          //Add Uniform Buffer for resizing
+    render_pipeline: wgpu::RenderPipeline, // GPU Pipeline for rendering
+    vertex_buffer: wgpu::Buffer,           // Quad geometry
+    instance_buffer: wgpu::Buffer,         // Particle-positions
+    uniform_buffer: wgpu::Buffer,          // Add Uniform Buffer for resizing
     uniform_bind_group: wgpu::BindGroup,
-    instance_count: u32, // Partikelanzahl
-    max_particles: u32,  // kann später für Buffer Kapazität benutzt werden
+    instance_count: u32, // Particle count
+    max_particles: u32,  // can later be used for buffer capacity
 
-    pub size: (u32, u32), //For resizing
+    pub size: (u32, u32), //for resizing
 }
 
-// repräsentation eines Partikels in GPU
+// representation of a particle in GPU
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct ParticleInstance {
-    position: [f32; 2], // x und y in Fenster
+    position: [f32; 2], // x and y in window
     color: [f32; 4],
-    pub radius: f32, // radius im Fenster
+    pub radius: f32, // radius in window
     _padding: f32,
 }
 
-// ein Eckpunkt eines Quads
+// as corner of a quad
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
-    position: [f32; 2], // x und y relativ zu Zentrum
+    position: [f32; 2], // x and y relative to center
 }
 
 impl Vertex {
-    // 4 ecken des Quadrats als 2 dreiecke
+    // 4 corners of quad as 2 triangles
     const QUAD: [Vertex; 6] = [
         Vertex {
-            position: [-0.5, -0.5], //u l
+            position: [-0.5, -0.5], //u l (unten links, etc.) (deliberately in german)
         },
         Vertex {
             position: [0.5, -0.5], //u r
@@ -135,7 +135,7 @@ impl Vertex {
         },
     ];
 
-    // Vertex Layout für WGPU
+    // Vertex Layout for WGPU
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -150,7 +150,7 @@ impl Vertex {
 }
 
 impl ParticleInstance {
-    // Instance Layout für WGPU
+    // Instance Layout for WGPU
     fn desc<'a>() -> wgpu::VertexBufferLayout<'a> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<ParticleInstance>() as wgpu::BufferAddress,
@@ -192,7 +192,7 @@ impl ParticleRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // Bind Group Layout erstellen
+        // create Bind Group Layout
         let uniform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
@@ -208,7 +208,7 @@ impl ParticleRenderer {
                 label: Some("Uniform Bind Group Layout"),
             });
 
-        // Bind Group erstellen
+        // create Bind Group
         let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &uniform_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
@@ -218,7 +218,7 @@ impl ParticleRenderer {
             label: Some("Uniform Bind Group"),
         });
 
-        // Pipeline Layout erstellen
+        // create Pipeline Layout
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Particle Pipeline Layout"),
@@ -226,13 +226,13 @@ impl ParticleRenderer {
                 push_constant_ranges: &[],
             });
 
-        // Shader Modul wird erstellt
+        // create Shader Modul
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Particle  Shader"),
             source: wgpu::ShaderSource::Wgsl(SHADER_SOURCE.into()),
         });
 
-        // Render Pipeline wird erstellt
+        // create Render Pipeline
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Particle Render Pipeline"),
             layout: Some(&render_pipeline_layout),
@@ -241,8 +241,8 @@ impl ParticleRenderer {
                 module: &shader,
                 entry_point: "vs_main",
                 buffers: &[
-                    Vertex::desc(),           //@location(0) für quad geometrie
-                    ParticleInstance::desc(), //@location(1) und @location(2) für partikel position und radius
+                    Vertex::desc(),           //@location(0) for quad geometry
+                    ParticleInstance::desc(), //@location(1) and @location(2) for particle position and radius
                 ],
                 compilation_options: Default::default(),
             },
@@ -267,14 +267,14 @@ impl ParticleRenderer {
             //cache: None,
         });
 
-        // Vertex-Buffer wird erstellt für die Quad Geometrie
+        // Vertex-Buffer is created for the Quad geometry
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Particle Vertex Buffer"),
             contents: bytemuck::cast_slice(&Vertex::QUAD),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        // Instance Buffer, wird für jeden Frame aktualisiert
+        // Instance Buffer, gets updated for every frame
         let max_particles = 100000; //for now max particles is fixed, could be changed later
         let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Instance Buffer"),
@@ -313,7 +313,7 @@ impl ParticleRenderer {
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
-    // if the changes of the renderer and scene works as I intended, we wouldnt need this function anymore
+    // if the changes of the renderer and scene works as I intended, we shouldnt need this function anymore
 
     //pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
     //    let uniforms = GlobalUniforms {
@@ -323,12 +323,12 @@ impl ParticleRenderer {
     //    queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     //}
 
-    pub fn update_window_size(&mut self, _queue: &Queue, width: u32, height: u32) {
+    pub fn update_window_size(&mut self, width: u32, height: u32) {
         self.size = (width, height);
         //queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
 
-    // Aktualisiert die Partikel-Positionen auf der GPU
+    // updates the particle-position on the GPU
     pub fn update_particles(&mut self, particles: &[Particle], queue: &Queue) {
         let color_slow = [0.2, 0.2, 1.0, 1.0];
         let color_fast = [1.0, 0.2, 0.2, 1.0];
@@ -341,7 +341,7 @@ impl ParticleRenderer {
                 if p.is_magnet {
                     ParticleInstance {
                         position: [p.pos.x, p.pos.y],
-                        color: p.color, // Nutze die Farbe des Magneten
+                        color: p.color, // use the colors of the magnets
                         radius: p.radius,
                         _padding: 0.0,
                     }
@@ -370,38 +370,27 @@ impl ParticleRenderer {
             })
             .collect();
 
-        //speichert anzahl
+        // saves count
         self.instance_count = instances.len() as u32;
 
-        //kopiert zu GPU
+        // copy to GPU
         if !instances.is_empty() {
             queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
         }
     }
 
-    pub fn draw<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
-        if self.instance_count == 0 {
-            return;
-        }
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.draw(0..6, 0..self.instance_count);
-    }
-
-    // Rendert alle Partikel in einem Draw-Call
+    // renders all particles in a draw call
     pub fn render<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {
         if self.instance_count == 0 {
-            return; // macht nichts wenn keine Artikel vorhanden
+            return; // doesn't do anything if no particles are there
         }
         render_pass.set_pipeline(&self.render_pipeline);
 
-        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]); //Bind group für shader
+        render_pass.set_bind_group(0, &self.uniform_bind_group, &[]); //Bind group for shader
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        render_pass.draw(0..6, 0..self.instance_count); //mind. 6 vertices
+        render_pass.draw(0..6, 0..self.instance_count); //min. 6 vertices
     }
 }
 

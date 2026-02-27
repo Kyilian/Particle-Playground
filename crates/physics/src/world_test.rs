@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod test {
 
-    use super::*;
     use crate::{CircleCollider, Particle, RectCollider, World};
     use glam::Vec2;
 
@@ -75,7 +74,7 @@ mod test {
         };
         world.add_circle_collider(collider);
 
-        // Partikel außerhalb, kam von innen → echte Kollision
+        // particle outside, came from inside -> real colission
         let mut p = Particle::new(Vec2::new(12.0, 0.0), 6.0);
         p.old_pos = Vec2::new(9.0, 0.0);
 
@@ -88,7 +87,7 @@ mod test {
         let vel = p.pos - p.old_pos;
         let normal = (p.pos - collider.center).normalize();
 
-        // Nach der Kollision darf das Partikel nicht weiter nach außen laufen
+        // particle isn't allowed to keep going outward after collision
         assert!(
             vel.dot(normal) <= 0.0,
             "Particle velocity still points outward: vel={:?}, normal={:?}",
@@ -249,14 +248,14 @@ mod test {
         let mut w1 = World::new();
         let mut w2 = World::new();
 
-        // Mix aus Kollision / keine Kollision / diagonal
+        // mix of collision / no collision / diagonal
         let mut p0 = Particle::new(Vec2::new(0.0, 0.0), 6.0);
         let mut p1 = Particle::new(Vec2::new(11.5, 0.0), 6.0); // overlap (min_dist=12)
         let mut p2 = Particle::new(Vec2::new(30.0, 0.0), 6.0); // no overlap
         let mut p3 = Particle::new(Vec2::new(11.5, 11.5), 6.0); // diagonal neighbor
 
         for p in [&mut p0, &mut p1, &mut p2, &mut p3] {
-            p.old_pos = p.pos; // keine Bewegung, nur overlap resolution
+            p.old_pos = p.pos; // no movement, only overlap resolution
         }
 
         for p in [p0, p1, p2, p3] {

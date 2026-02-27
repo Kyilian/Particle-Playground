@@ -4,16 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Eigene Crates
+# own crates
 pp_physics = { workspace = true }
 pp_render = { workspace = true }
 pp_scenes = { workspace = true }
-pp_input = { workspace = true }
 pp_gui = { workspace = true }
-pp_common = { workspace = true }
 
 
-# Externe Tools
+# external tools
 winit = { workspace = true }
 wgpu = { workspace = true }
 log = { workspace = true }

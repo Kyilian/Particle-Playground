@@ -39,7 +39,7 @@ impl SceneType {
             SceneType::BenchmarkScene => "Benchmark Scene",
             SceneType::TestScene => "Test Scene",
             SceneType::NBodyScene => "N-Body Scene",
-            // SceneType::WaterSimulation => "Water Simulation",
+            // SceneType::LiquidSimulation => "Water Simulation",
         }
     }
 
@@ -48,7 +48,7 @@ impl SceneType {
             SceneType::FallingParticles => "Particles falling down to customizable gravity",
             SceneType::BenchmarkScene => "Performance-Test: Continuously spawns particles until the fps fall under 30.",
             SceneType::TestScene => "Test-Scene with different collider-types (circle and triangle).",
-            SceneType::NBodyScene => "N-Body gravitation simulation, left-click to spawn a particle with a stronger pull."
+            SceneType::NBodyScene => "N-Body gravitation simulation, left: single particle, right: particle-cluster, mmb: heavy mass."
             // SceneType::LiquidSimulation => TBD
         }
     }

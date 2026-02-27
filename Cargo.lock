@@ -2519,9 +2519,7 @@ dependencies = [
  "glam",
  "log",
  "pollster",
- "pp_common",
  "pp_gui",
- "pp_input",
  "pp_physics",
  "pp_render",
  "pp_scenes",
@@ -2530,26 +2528,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "pp_common"
-version = "0.1.0"
-dependencies = [
- "glam",
-]
-
-[[package]]
 name = "pp_gui"
 version = "0.1.0"
 dependencies = [
  "egui",
- "pp_common",
-]
-
-[[package]]
-name = "pp_input"
-version = "0.1.0"
-dependencies = [
- "pp_common",
- "winit",
 ]
 
 [[package]]
@@ -2557,7 +2539,6 @@ name = "pp_physics"
 version = "0.1.0"
 dependencies = [
  "glam",
- "pp_common",
 ]
 
 [[package]]
@@ -2570,7 +2551,6 @@ dependencies = [
  "egui-winit",
  "glam",
  "pollster",
- "pp_common",
  "pp_physics",
  "wgpu",
  "winit",
@@ -2582,7 +2562,6 @@ version = "0.1.0"
 dependencies = [
  "egui",
  "glam",
- "pp_common",
  "pp_physics",
  "pp_render",
  "rand",

@@ -6,8 +6,8 @@ pub use wgpu;
 pub const WINDOW_WIDTH: u32 = 800;
 pub const WINDOW_HEIGHT: u32 = 600;
 
-//Render COntext should make it easier to call the renderer in the different scenes.
-//We call the renderer with this struct, so we can add things later for example rectangles
+// Render Context should make it easier to call the renderer in the different scenes.
+// We call the renderer with this struct, so we can add things later for example rectangles
 pub struct RenderContext<'a> {
     pub particle_renderer: &'a ParticleRenderer,
     pub queue: &'a wgpu::Queue,
@@ -20,8 +20,8 @@ mod tests {
 
     #[test]
     fn test_window_dimensions() {
-        assert_eq!(WINDOW_HEIGHT, 600);
         assert_eq!(WINDOW_WIDTH, 800);
+        assert_eq!(WINDOW_HEIGHT, 600);
     }
 
     #[test]

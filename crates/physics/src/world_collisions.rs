@@ -4,31 +4,31 @@ use std::collections::HashMap;
 
 impl World {
     pub fn solve_collisions(&mut self) {
-        let restitution = 0.96; //sehr bouncy verhalten..0.3 weniger bis garkein bounch
+        let restitution = 0.96; // very bouncy, 0.3 less till no bounce
 
         for p in &mut self.particles {
             if p.is_magnet {
                 continue;
             }
             for c in &self.colliders {
-                let dir = p.pos - c.center; //testen ob der partikel auserhalb der border ist
+                let dir = p.pos - c.center; //test if the particles if out of bounds
                 let dist = dir.length();
 
                 if dist > c.radius {
                     let normal = dir.normalize();
 
-                    p.pos = c.center + normal * c.radius; // Position auf Rand korrigieren -Position Projection
+                    p.pos = c.center + normal * c.radius; // fix position on border -position projection
 
-                    let vel = p.pos - p.old_pos; // aufschlags geschwindigkeit brechenet
-                    let reflected = vel - 2.0 * vel.dot(normal) * normal; //abprallen mit korrekt reflektierter Richtung
-                    let reflected = reflected * restitution; //  Energieverlust einberechen
-                    p.old_pos = p.pos - reflected; // Verlet- trick, partikel weiß er ist abgeprallt
+                    let vel = p.pos - p.old_pos; // calculate colission speed
+                    let reflected = vel - 2.0 * vel.dot(normal) * normal; // bounce with correct direction
+                    let reflected = reflected * restitution; // include energyloss from bounce
+                    p.old_pos = p.pos - reflected; // Verlet- trick, particle knows it bounced
                 }
             }
         }
     }
 
-    //komplexität n^2
+    //complexity n^2
     pub fn solve_particle_collisions(&mut self) {
         let n = self.particles.len();
         for i in 0..n {
@@ -43,7 +43,7 @@ impl World {
                 let a = &mut left[i];
                 let b = &mut right[0];
 
-                //falls unterschiedlich große partikel implementiert
+                // incase differently sized particles are implemented
                 let min_dist = a.radius + b.radius;
                 let dir = b.pos - a.pos;
                 let dist = dir.length();
@@ -51,16 +51,16 @@ impl World {
                 // overlap
                 if dist < min_dist {
                     let normal = if dist > 0.0 {
-                        // einheitsvektor von a nach b (normale) + dist != 0
+                        // unitvectors from a to b (normal) + dist != 0
                         dir / dist
                     } else {
-                        Vec2::X // ausweichvektor für case dist = 0
+                        Vec2::X // dodging vector for case dist = 0
                     };
                     let overlap = min_dist - dist;
 
-                    //falls unterschiedlich große partikel implementiert
+                    // incase differently sized particles are implemented
                     let total = a.radius + b.radius;
-                    let wa = b.radius / total; // a wird weniger bewegt, wenn a groß ist
+                    let wa = b.radius / total; // a is moved less, if a is big
                     let wb = a.radius / total;
                     a.pos -= normal * overlap * wa;
                     b.pos += normal * overlap * wb;
@@ -70,9 +70,9 @@ impl World {
                     let vel_b = b.pos - b.old_pos;
 
                     let rel_vel = vel_b - vel_a;
-                    let rel_normal_speed = rel_vel.dot(normal); // geschwindigkeit auf der kollisionsnormalen
+                    let rel_normal_speed = rel_vel.dot(normal); // movementspeed on the normal colission
 
-                    // kleiner 0 bedeutet sie bewegen sich aufeinander zu -> bounce
+                    // smaller than 0 means they are moving towards each other -> bounce
                     if rel_normal_speed < 0.0 {
                         let bounce = -(1.0 + self.restitution) * rel_normal_speed * 0.5;
                         let bounce_vec = normal * bounce;
@@ -97,19 +97,19 @@ impl World {
 
         let cell_size = (max_radius * 2.0).max(1e-6);
 
-        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); //eine Zelle ist eine Liste von Partikeln
+        let mut grid: HashMap<(i32, i32), Vec<usize>> = HashMap::new(); // each gridsquare is a list of particles
 
         for (idx, p) in self.particles.iter().enumerate() {
-            //ordnet jedem Partikel eine Zelle zu
+            // assigns each particle a gridsquare
             let cx = (p.pos.x / cell_size).floor() as i32;
             let cy = (p.pos.y / cell_size).floor() as i32;
             grid.entry((cx, cy)).or_default().push(idx);
         }
 
-        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // doppelchecken vermeiden
+        const OFFS: [(i32, i32); 5] = [(0, 0), (1, 0), (0, 1), (1, 1), (-1, 1)]; // avoid double checking
         let mut pairs: Vec<(usize, usize)> = Vec::new();
 
-        //vergelich von Zellen und identifizierne von vergleichs pairs
+        // comparison of gridsquares and identification of comparison pairs
         for (&cell, indices) in grid.iter() {
             for (dx, dy) in OFFS {
                 let ncell = (cell.0 + dx, cell.1 + dy);
@@ -118,13 +118,13 @@ impl World {
                 };
 
                 if dx == 0 && dy == 0 {
-                    //paar in der gleichen Zelle werden in überprüfungsarray pairs gespeichert
+                    // pairs in the same gridsquare get saved in pairs for checking array
                     for a in 0..indices.len() {
                         for b in (a + 1)..indices.len() {
                             let i = indices[a];
                             let j = indices[b];
                             if i < j {
-                                // richtige reinfolge um doppelchecks zu vermeiden
+                                // correct order to avoid doublechecks
                                 pairs.push((i, j));
                             } else {
                                 pairs.push((j, i));
@@ -132,7 +132,7 @@ impl World {
                         }
                     }
                 } else {
-                    //paare zwischen Zelle und Nachbarzelle werden in überprüfungsarray pairs gespeichert
+                    // pairs between Gridsquare and neighbours gridsquare get saved in checking array
                     for &i in indices {
                         for &j in nindices {
                             if i == j {
@@ -148,12 +148,12 @@ impl World {
                 }
             }
         }
-        // deterministisch + doppelte raus
+        // deterministic + remove duplications
 
         pairs.sort_unstable();
         pairs.dedup();
 
-        //kollisionsberechnung für paare
+        // collision calculation for pairs
 
         let restitution = self.restitution;
 
@@ -244,11 +244,11 @@ impl World {
 
                         vel *= corner_damping;
 
-                        //random direction bounce so it dont get stuck in a corner
+                        // random direction bounce so it doesn't get stuck in a corner
                         let noise = (p.pos.x + p.pos.y).sin() * 0.1;
                         vel.x += noise;
                     } else {
-                        //normal wall collide logic
+                        // normal wall collide logic
                         if hit_x {
                             vel.x = -vel.x * restitution;
                             vel.y *= 0.99;
@@ -259,7 +259,7 @@ impl World {
                         }
                     }
 
-                    // Verlet-Update anwenden
+                    // apply Verlet-update
                     p.old_pos = p.pos - vel;
                 }
             }

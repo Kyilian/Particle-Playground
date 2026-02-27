@@ -10,7 +10,7 @@ impl World {
 
     pub fn apply_gravity(&mut self) {
         let g = 4.0; // Variable to apply force
-        let softening = 500.0; //to prevent bounce effect
+        let softening = 500.0; // to prevent bounce effect
 
         let n = self.particles.len();
 
@@ -23,11 +23,11 @@ impl World {
                 let direction = p2.pos - p1.pos;
                 let dist_sq = direction.length_squared();
 
-                //Newtons third law
+                // Newtons third law
                 let gravity_force = g / (dist_sq + softening);
                 let dir_norm = direction.normalize_or_zero();
 
-                //including mass to the acceleration
+                // including mass to the acceleration
                 p1.acc += dir_norm * (gravity_force * p2.mass);
                 p2.acc -= dir_norm * (gravity_force * p1.mass);
             }
@@ -53,6 +53,6 @@ impl World {
         }
     }
 
-    //simple O(n^2) gravity apply, maybe use Barnes Hut later
-    //Gravity for N-Body Scene
+    // simple O(n^2) gravity apply, maybe use Barnes Hut later
+    // Gravity for N-Body Scene
 }

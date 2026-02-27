@@ -48,7 +48,7 @@ impl BenchmarkScene {
             let x = (i as f32 - count as f32 * 0.5) * spacing;
 
             let mut p = Particle::new(Vec2::new(x, y), self.particle_radius);
-            // reinschießen nach unten
+            // shoot downards
             p.old_pos = p.pos - Vec2::new(0.0, self.speed * dt);
 
             world.add_particle(p);
@@ -76,7 +76,7 @@ impl Scene for BenchmarkScene {
             self.collider_old = self.collider_radius;
         }
 
-        // Spawning pro sec
+        // spawnrate per sec
         if self.bench_running {
             self.accum += dt;
 
@@ -88,7 +88,7 @@ impl Scene for BenchmarkScene {
 
         world.step(dt);
 
-        // stop bei unter 30fps
+        // stops at under 30 fps
         if self.bench_running && world.fps < 30.0 {
             self.bench_running = false;
             self.accum = 0.0;

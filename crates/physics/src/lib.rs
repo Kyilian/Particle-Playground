@@ -1,4 +1,5 @@
 pub mod collider;
+pub mod collider_tests;
 pub mod neighbor_grid;
 pub mod particle;
 pub mod rect_collider;
