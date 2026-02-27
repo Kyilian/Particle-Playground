@@ -1,6 +1,6 @@
 use crate::galaxy;
-use crate::quadtree::{Quadrant, Quadtree};
 pub use crate::neighbor_grid::NeighborGrid;
+use crate::quadtree::{Quadrant, Quadtree};
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 
@@ -26,7 +26,6 @@ pub struct World {
 
     pub quadtree: Quadtree,
 
-    pub quadtree: Quadtree,
     pub window_width: u32,
     pub window_height: u32,
 }

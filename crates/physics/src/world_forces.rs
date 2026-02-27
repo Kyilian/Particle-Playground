@@ -1,3 +1,4 @@
+use crate::quadtree::Quadrant;
 use crate::World;
 
 impl World {
@@ -53,6 +54,24 @@ impl World {
         }
     }
 
-    // simple O(n^2) gravity apply, maybe use Barnes Hut later
-    // Gravity for N-Body Scene
+    pub fn apply_gravity_barnes_hut(&mut self) {
+        if self.particles.len() < 2 {
+            return;
+        }
+        let root_quadrant = Quadrant::new(&self.particles);
+
+        self.quadtree.clear(root_quadrant);
+
+        for p in &self.particles {
+            self.quadtree.insert(p.pos, p.mass);
+        }
+
+        let gravity = self.gravity.y; //default gravity
+
+        self.quadtree.propagate();
+
+        for particle in &mut self.particles {
+            particle.acc = self.quadtree.acc(particle.pos) * gravity;
+        }
+    }
 }

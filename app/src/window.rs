@@ -14,7 +14,6 @@ use winit::{
     window::{Icon, WindowBuilder},
 };
 
-
 enum AppState {
     Launcher {
         selected_scene: Option<SceneType>,
@@ -349,15 +348,29 @@ impl RenderWindow {
                     .show(&ctx, |ui| {
                         ui.vertical_centered(|ui| {
                             if let Some(texture) = &self.background_texture {
-                                let rect = ui.max_rect();
+                                let panel_rect = ui.max_rect();
+
+                                let min_size = egui::vec2(600.0, 400.0); // minsize
+                                let max_size = egui::vec2(1800.0, 1200.0); //maxsize
+
+                                let img_size = egui::vec2(
+                                    panel_rect.width().clamp(min_size.x, max_size.x),
+                                    panel_rect.height().clamp(min_size.y, max_size.y),
+                                );
+
+                                //center the image in the panel
+                                let offset = (panel_rect.size() - img_size) * 0.5;
+                                let img_rect =
+                                    egui::Rect::from_min_size(panel_rect.min + offset, img_size);
+
                                 ui.painter().image(
                                     texture.id(),
-                                    rect,
+                                    img_rect,
                                     egui::Rect::from_min_max(
                                         egui::pos2(0.0, 0.0),
                                         egui::pos2(1.0, 1.0),
                                     ),
-                                    egui::Color32::from_rgba_unmultiplied(180, 180, 180, 255),
+                                    egui::Color32::WHITE,
                                 );
                             }
                             ui.set_max_size(egui::vec2(400.0, 600.0));
