@@ -10,6 +10,7 @@ pub struct NBodyScene {
     particle_radius: f32,
 
     color: [f32; 4],
+    ui_has_focus: bool,
     camera_zoom: f32,
     camera_offset: Vec2,
 }
@@ -21,7 +22,7 @@ impl NBodyScene {
             mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
-
+            ui_has_focus: false,
             camera_offset: Vec2::ZERO,
             camera_zoom: 1.0,
         }
@@ -49,6 +50,10 @@ impl Scene for NBodyScene {
         left_click: bool,
         is_middle: bool,
     ) {
+        if self.ui_has_focus {
+            return;
+        }
+
         let mut rng = rand::thread_rng();
         if left_click {
             let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
@@ -127,7 +132,9 @@ impl Scene for NBodyScene {
     }
 
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
-        egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
+        self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
+
+        egui::Window::new("N-Body Simulation").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 

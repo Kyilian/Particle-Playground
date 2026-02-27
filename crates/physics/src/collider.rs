@@ -1,6 +1,6 @@
 use glam::Vec2;
 
-///einfacher Kreis Collider für MVP
+///simple circle collider for MVP
 
 #[derive(Debug, Clone, Copy)]
 pub struct CircleCollider {

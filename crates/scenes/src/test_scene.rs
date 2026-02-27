@@ -15,12 +15,11 @@ pub struct TestScene {
     pub collider_radius: f32,
     collider_old: f32,
 
-    fps: f32,
-
     //to add a rect_collider
     rect_collider_active: bool,
     rect_size: Vec2,
     rect_size_old: Vec2,
+    ui_has_focus: bool,
 
     camera_offset: Vec2,
     camera_zoom: f32,
@@ -35,11 +34,11 @@ impl TestScene {
             particle_radius: 2.0,
             collider_radius: 250.0,
             collider_old: 250.0,
-            fps: 60.0,
 
             rect_collider_active: false,
             rect_size: Vec2::new(400.0, 400.0),
             rect_size_old: Vec2::new(400.0, 400.0),
+            ui_has_focus: false,
 
             camera_offset: Vec2::ZERO,
             camera_zoom: 1.0,
@@ -81,8 +80,8 @@ impl Scene for TestScene {
 
             _world.add_rect_collider(RectCollider {
                 center: Vec2::new(0.0, 0.0),
-                width: self.rect_size.y,
-                height: self.rect_size.x,
+                width: self.rect_size.x,
+                height: self.rect_size.y,
             });
         }
 
@@ -118,6 +117,10 @@ impl Scene for TestScene {
         left_click: bool,
         is_middle: bool,
     ) {
+        if self.ui_has_focus {
+            return;
+        }
+
         let mut rng = rand::thread_rng();
 
         if left_click {
@@ -173,6 +176,8 @@ impl Scene for TestScene {
 
     //Basic UI to test Sliders and Buttos
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut World) {
+        self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
+
         egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
@@ -201,11 +206,11 @@ impl Scene for TestScene {
             ui.separator();
 
             ui.add(
-                egui::Slider::new(&mut self.rect_size.x, 50.0..=1000.0)
+                egui::Slider::new(&mut self.rect_size.y, 50.0..=1000.0)
                     .text("Rect Collider Height"),
             );
             ui.add(
-                egui::Slider::new(&mut self.rect_size.y, 50.0..=1000.0).text("Rect Collider Width"),
+                egui::Slider::new(&mut self.rect_size.x, 50.0..=1000.0).text("Rect Collider Width"),
             );
             ui.separator();
 

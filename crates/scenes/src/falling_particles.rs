@@ -17,7 +17,7 @@ enum MouseClickMode {
 enum MouseScrollMode {
     ResizeMagnet,
     AdjustMagnetStrength,
-    // falls andere scroll modi implemented
+    // for implementation of other scroll modes
 }
 
 pub struct FallingParticles {
@@ -40,7 +40,7 @@ pub struct FallingParticles {
 impl FallingParticles {
     pub fn new() -> Self {
         Self {
-            gravity: 9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
+            gravity: 9.81, // standardvalue
             spawnrate: None,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
@@ -151,7 +151,7 @@ impl Scene for FallingParticles {
                     });
                     let mut magnet_p = Particle::new(mouse_pos, self.magnet_radius);
                     let density = (self.magnet_strength.abs() / 10000.0);
-                    // rot für anziehung, blau für abstoßung
+                    // red for pull, blue for push
                     let new_color = if self.magnet_strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
                     } else {
@@ -200,7 +200,7 @@ impl Scene for FallingParticles {
                     let old_radius = m.radius;
                     m.radius = (m.radius + scroll_y * 15.0);
 
-                    // Partikel-Radius synchronisieren
+                    // synchronize particle value
                     if let Some(p) = world
                         .particles
                         .iter_mut()
@@ -214,9 +214,9 @@ impl Scene for FallingParticles {
                 if let Some(m) = nearest_magnet {
                     m.strength = (m.strength + scroll_y * 50.0).clamp(-1000.0, 1000.0);
 
-                    // berechnung der dichte basierend auf der stärke
+                    // calculation of density based on strength
                     let density = (m.strength.abs() / 10000.0);
-                    // rot für anziehung, blau für abstoßung
+                    // red for pull, blue for push
                     let new_color = if m.strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
                     } else {
@@ -248,7 +248,7 @@ impl Scene for FallingParticles {
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
         self.gravity = 9.81;
-        _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
+        _world.clear_particles(); // changed to clear_particles so collider stays
     }
 
     //Basic UI to test Sliders and Buttos
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn test_initial_state() {
         let scene = FallingParticles::new();
-        // Standardwerte prüfen
+        // check standard values
         assert_eq!(scene.gravity, 9.81);
         assert_eq!(scene.particle_radius, 2.0);
         assert_eq!(scene.magnet_radius, 200.0);

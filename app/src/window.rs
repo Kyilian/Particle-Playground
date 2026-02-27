@@ -11,11 +11,9 @@ use winit::{
     event::{ElementState, Event, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
-    window::WindowBuilder,
+    window::{Icon, WindowBuilder},
 };
 
-const WINDOW_WIDTH: u32 = 1000;
-const WINDOW_HEIGHT: u32 = 600;
 
 enum AppState {
     Launcher {
@@ -49,22 +47,30 @@ impl RenderWindow {
     pub fn run() -> Result<(), Box<dyn std::error::Error>> {
         let mut last_time = std::time::Instant::now();
 
-        let mut world = World::new();
-
         //creates fps calculation variables
         let mut fps_acc_time: f32 = 0.0;
         let mut fps_frames: u32 = 0;
         let mut fps: f32 = 0.0;
 
-        // creates event loop and window
+        // creates event loop, window and app icon
         let event_loop = EventLoop::new().unwrap();
+        let icon_bytes = include_bytes!("../../assets/icon.jpg");
+        let icon_image = image::load_from_memory(icon_bytes)
+            .expect("Icon Datei nicht gefunden oder Pfad falsch")
+            .to_rgba8();
+        let (width, height) = icon_image.dimensions();
+
+        let window_icon = Icon::from_rgba(icon_image.into_raw(), width, height)
+            .expect("Fehler beim Erstellen des Icons");
+
         let window = Arc::new(
             //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
+                .with_window_icon(Some(window_icon))
                 .with_inner_size(winit::dpi::LogicalSize::new(
-                    world.WINDOW_WIDTH,
-                    world.WINDOW_HEIGHT,
+                    pp_render::WINDOW_WIDTH,
+                    pp_render::WINDOW_HEIGHT,
                 ))
                 .with_resizable(true)
                 .build(&event_loop)?,
@@ -109,8 +115,8 @@ impl RenderWindow {
         let config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
-            width: world.WINDOW_WIDTH,
-            height: world.WINDOW_HEIGHT,
+            width: pp_render::WINDOW_WIDTH,
+            height: pp_render::WINDOW_HEIGHT,
             present_mode: surface_caps.present_modes[0],
             alpha_mode: surface_caps.alpha_modes[0],
             view_formats: vec![],
@@ -167,17 +173,17 @@ impl RenderWindow {
             background_texture,
         };
 
-        // physics world + mausposition
+        // physics world + mouse position
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
-        const TIME_STEP: f32 = 1.0 / 120.0; // 60 Hz Physik
-        let mut accumulator = 0.0; // "Zeit-Speicher"
+        const TIME_STEP: f32 = 1.0 / 120.0; // 120 Hz physics
+        let mut accumulator = 0.0; // "time-memory"
 
         // runs the event loop
         event_loop.run(move |event, elwt| {
             match event {
-                // 1. HAUPT-BLOCK: FENSTER EVENTS
+                // 1. MAIN BLOCK: WINDOW EVENTS
                 Event::WindowEvent {
                     event: ref win_event,
                     ..
@@ -185,9 +191,11 @@ impl RenderWindow {
                     let response = render_window
                         .egui_state
                         .on_window_event(&*window, &win_event);
-
-                    // ÄNDERUNG: Hier stand vorher 'match event'.
-                    // Wir matchen jetzt direkt auf 'win_event', damit wir die Struktur nicht doppeln.
+                    if response.consumed {
+                        return;
+                    }
+                    // CHANGE: here stood "match event" before
+                    // we now match directly on "win_event, so the strukture isn't duplicated
                     match win_event {
                         WindowEvent::CloseRequested => {
                             elwt.exit();
@@ -195,7 +203,7 @@ impl RenderWindow {
                         WindowEvent::KeyboardInput { event, .. } => {
                             if event.state == ElementState::Pressed {
                                 if let Key::Named(NamedKey::Escape) = event.logical_key {
-                                    // ESC: Zurück zum Launcher
+                                    // ESC: back to launcher
                                     match &render_window.app_state {
                                         AppState::Running { .. } => {
                                             render_window.return_to_launcher();
@@ -247,7 +255,7 @@ impl RenderWindow {
                                 winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
                                 winit::event::MouseScrollDelta::PixelDelta(pos) => {
                                     pos.y as f32 * 0.1
-                                } // Pixel-Scroll normalisieren
+                                } // normalize pixel-scroll
                             };
 
                             if let AppState::Running { scene, world, .. } =
@@ -296,7 +304,6 @@ impl RenderWindow {
                     }
 
                     if let AppState::Running { world, .. } = &render_window.app_state {
-                        println!("FPS: {:.1} | Particles: {}", fps, world.particles.len());
                         render_window
                             .particle_renderer
                             .update_particles(&world.particles, &render_window.queue);
@@ -485,14 +492,14 @@ impl RenderWindow {
             self.surface.configure(&self.device, &self.config);
 
             if let AppState::Running { world, .. } = &mut self.app_state {
-                world.WINDOW_HEIGHT = new_height;
-                world.WINDOW_WIDTH = new_width;
+                world.window_height = new_height;
+                world.window_width = new_width;
             }
 
             //new renderer incase window gets resized
             //changed it to the Uniform buffer
             self.particle_renderer
-                .update_window_size(&self.queue, new_width, new_height);
+                .update_window_size(new_width, new_height);
             println!("Resized to: {}x{}", new_width, new_height);
         }
     }
@@ -583,19 +590,6 @@ impl RenderWindow {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         Ok(())
-    }
-
-    // Public access to WGPU resources for particle rendering
-    pub fn device(&self) -> &Device {
-        &self.device
-    }
-
-    pub fn queue(&self) -> &Queue {
-        &self.queue
-    }
-
-    pub fn config(&self) -> &SurfaceConfiguration {
-        &self.config
     }
 }
 
