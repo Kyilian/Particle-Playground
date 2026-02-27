@@ -10,11 +10,6 @@ pub struct NBodyScene {
     particle_radius: f32,
 
     color: [f32; 4],
-    //pub collider_radius: f32,
-    //collider_old: f32,
-    rect_size: Vec2,
-    rect_size_old: Vec2,
-
     camera_zoom: f32,
     camera_offset: Vec2,
 }
@@ -26,8 +21,6 @@ impl NBodyScene {
             mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
-            rect_size: Vec2::new(400.0, 400.0),
-            rect_size_old: Vec2::new(400.0, 400.0),
 
             camera_offset: Vec2::ZERO,
             camera_zoom: 1.0,
@@ -46,14 +39,6 @@ impl Scene for NBodyScene {
         _world.gravity = Vec2::new(0.0, self.gravity);
         _world.nbody_step(_dt);
         _world.particle_radius = self.particle_radius;
-
-        _world.clear_rect_collider();
-
-        _world.add_rect_collider(RectCollider {
-            center: Vec2::new(0.0, 0.0),
-            width: _world.WINDOW_WIDTH as f32,
-            height: _world.WINDOW_HEIGHT as f32,
-        });
     }
 
     fn on_click(
@@ -110,6 +95,7 @@ impl Scene for NBodyScene {
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+
     fn on_mouse_release(
         &mut self,
         _world: &mut World,

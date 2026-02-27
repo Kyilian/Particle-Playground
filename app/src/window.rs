@@ -207,13 +207,17 @@ impl RenderWindow {
                             if let AppState::Running { scene, world, .. } =
                                 &mut render_window.app_state
                             {
-                                if *state == ElementState::Pressed {
-                                    scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
-                                } else if *state == ElementState::Released {
-                                    // --- HIER NEU EINFÜGEN ---
-                                    scene.on_mouse_release(
-                                        world, mouse_pos, is_right, is_left, is_middle,
-                                    );
+                                if !response.consumed {
+                                    if *state == ElementState::Pressed {
+                                        scene.on_click(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    } else if *state == ElementState::Released {
+                                        // --- HIER NEU EINFÜGEN ---
+                                        scene.on_mouse_release(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    }
                                 }
                             }
                         }

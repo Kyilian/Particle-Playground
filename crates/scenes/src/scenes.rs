@@ -23,17 +23,16 @@ pub trait Scene {
         left_click: bool,
         is_middle: bool,
     );
-
+    // To drag the camera we need to know when the middle mouse button is pressed and released
     fn on_mouse_move(&mut self, world: &mut World, mouse_pos: Vec2);
     fn on_mouse_release(
         &mut self,
-        _world: &mut World,
-        _mouse_pos: Vec2,
-        _right_click: bool,
-        _left_click: bool,
-        _is_middle: bool,
-    ) {
-    }
+        world: &mut World,
+        mouse_pos: Vec2,
+        right_click: bool,
+        left_click: bool,
+        is_middle: bool,
+    );
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32);
 

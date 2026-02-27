@@ -307,8 +307,6 @@ impl World {
     pub fn barnes_hut_nbody_step(&mut self, dt: f32) {
         self.apply_gravity_barnes_hut();
         self.update_positions(dt);
-        self.solve_rect_collisions();
-        self.solve_particle_collisions_grid();
     }
 
     //resets all particles

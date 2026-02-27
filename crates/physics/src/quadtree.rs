@@ -117,6 +117,7 @@ impl Quadtree {
     pub fn subdivide(&mut self, node: usize) -> usize {
         self.parents.push(node);
         let children = self.nodes.len();
+        self.nodes[node].children = children; // without children always 0
 
         let nexts = [
             //root is always at index 0
