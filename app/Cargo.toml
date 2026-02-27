@@ -24,3 +24,4 @@ egui = { workspace = true }
 egui-wgpu = { workspace = true }
 egui-winit = { workspace = true }
 eframe = {workspace = true }
+image = { workspace = true }
