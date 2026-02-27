@@ -43,3 +43,6 @@ pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
 pp_gui =    { path = "./crates/gui" }
 pp_app ={ path= "./app"}
+
+#Bilder
+image = { version = "0.25"}

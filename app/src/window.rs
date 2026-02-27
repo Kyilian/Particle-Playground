@@ -10,7 +10,7 @@ use winit::{
     event::{ElementState, Event, MouseButton, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     keyboard::{Key, NamedKey},
-    window::WindowBuilder,
+    window::{Icon, WindowBuilder},
 };
 
 enum AppState {
@@ -48,12 +48,22 @@ impl RenderWindow {
         let mut fps_frames: u32 = 0;
         let mut fps: f32 = 0.0;
 
-        // creates event loop and window
+        // creates event loop, window and app icon
         let event_loop = EventLoop::new().unwrap();
+        let icon_bytes = include_bytes!("../../assets/icon.jpg");
+        let icon_image = image::load_from_memory(icon_bytes)
+            .expect("Icon Datei nicht gefunden oder Pfad falsch")
+            .to_rgba8();
+        let (width, height) = icon_image.dimensions();
+
+        let window_icon = Icon::from_rgba(icon_image.into_raw(), width, height)
+            .expect("Fehler beim Erstellen des Icons");
+
         let window = Arc::new(
             //Arc is needed because window needs to be owned by the buffer AND the surface
             WindowBuilder::new()
                 .with_title("Particle Playground")
+                .with_window_icon(Some(window_icon))
                 .with_inner_size(winit::dpi::LogicalSize::new(
                     pp_render::WINDOW_WIDTH,
                     pp_render::WINDOW_HEIGHT,
