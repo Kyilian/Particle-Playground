@@ -60,7 +60,7 @@ impl SceneType {
             SceneType::TestScene => "Test-Scene with different collider-types (circle and triangle).",
             SceneType::NBodyScene => "N-Body gravitation simulation, left: single particle, right: particle-cluster, mmb: heavy mass.",
             // SceneType::LiquidSimulation => TBD
-            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
+            SceneType::BarnesHutNbody => "N-Body gravitation simulation using Barnes-Hut algorithm, left: single particle, right: particle-cluster.",
             SceneType::LavaLamp => "Simple Implementation for a Lava Lamp, customizable in size and speed.",
         }
     }

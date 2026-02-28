@@ -16,7 +16,6 @@ pub struct NBodyScene {
     //mass: f32,
     particle_radius: f32,
 
-    color: [f32; 4],
     ui_has_focus: bool,
     camera_zoom: f32,
     camera_offset: Vec2,
@@ -27,7 +26,6 @@ impl NBodyScene {
         Self {
             gravity: 0.0,
             //mass: 1.0,
-            color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
             ui_has_focus: false,
             camera_offset: Vec2::ZERO,
@@ -129,7 +127,6 @@ impl Scene for NBodyScene {
     ) {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            self.color,
             self.camera_offset,
             self.camera_zoom,
         );

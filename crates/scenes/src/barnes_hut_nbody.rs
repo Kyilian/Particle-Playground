@@ -16,7 +16,6 @@ pub struct BarnesHutNbody {
     particle_radius: f32,
     camera_zoom: f32,
     camera_offset: Vec2,
-    color: [f32; 4],
 
     is_dragging: bool,
     last_mouse_pos: Vec2,
@@ -29,7 +28,6 @@ impl BarnesHutNbody {
         Self {
             gravity: Vec2::new(1.0, 1.0),
             mass: 1.0,
-            color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
             camera_zoom: 1.0,
             camera_offset: Vec2::ZERO,
@@ -164,7 +162,6 @@ impl Scene for BarnesHutNbody {
     ) {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            self.color,
             self.camera_offset,
             self.camera_zoom,
         );

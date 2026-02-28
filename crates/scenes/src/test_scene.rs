@@ -98,7 +98,6 @@ impl Scene for TestScene {
 
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            self.color, // Rot
             self.camera_offset,
             self.camera_zoom,
         );

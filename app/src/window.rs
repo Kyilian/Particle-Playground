@@ -371,6 +371,10 @@ impl RenderWindow {
                                 );
                             }
                             ui.set_max_size(egui::vec2(400.0, 600.0));
+
+                            ui.style_mut()
+                                .text_styles
+                                .insert(egui::TextStyle::Heading, egui::FontId::proportional(32.0));
                             ui.add_space(ui.available_height() * 0.15);
                             ui.heading("🎮 Particle Playground");
                             ui.add_space(10.0);

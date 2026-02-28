@@ -1,6 +1,6 @@
 mod particle_renderer;
 
-pub use particle_renderer::ParticleRenderer;
+pub use particle_renderer::{ColorMode, ParticleRenderer};
 pub use wgpu;
 
 pub const WINDOW_WIDTH: u32 = 800;
