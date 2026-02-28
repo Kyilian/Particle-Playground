@@ -90,7 +90,7 @@ impl Scene for TestScene {
     //call to the render function
     fn render<'rpass>(
         &self,
-        world: &World,
+        _world: &World,
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
@@ -154,7 +154,7 @@ impl Scene for TestScene {
         }
     }
 
-    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
     fn on_mouse_release(
         &mut self,

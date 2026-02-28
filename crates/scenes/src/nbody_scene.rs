@@ -1,6 +1,6 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{world, Particle, RectCollider, World};
+use pp_physics::{Particle, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
@@ -13,7 +13,7 @@ use rand::prelude::*;
 
 pub struct NBodyScene {
     gravity: f32,
-    mass: f32,
+    //mass: f32,
     particle_radius: f32,
 
     color: [f32; 4],
@@ -26,7 +26,7 @@ impl NBodyScene {
     pub fn new() -> Self {
         Self {
             gravity: 0.0,
-            mass: 1.0,
+            //mass: 1.0,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
             ui_has_focus: false,
@@ -108,7 +108,7 @@ impl Scene for NBodyScene {
         }
     }
 
-    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
 
     fn on_mouse_release(

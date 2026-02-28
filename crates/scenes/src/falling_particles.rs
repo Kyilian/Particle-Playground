@@ -149,7 +149,7 @@ impl Scene for FallingParticles {
                         radius: self.magnet_radius,
                     });
                     let mut magnet_p = Particle::new(mouse_pos, self.magnet_radius);
-                    let density = (self.magnet_strength.abs() / 10000.0);
+                    let density = self.magnet_strength.abs() / 10000.0;
                     // red for pull, blue for push
                     let new_color = if self.magnet_strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
@@ -196,8 +196,7 @@ impl Scene for FallingParticles {
         match self.current_scroll_mode {
             MouseScrollMode::ResizeMagnet => {
                 if let Some(m) = nearest_magnet {
-                    let old_radius = m.radius;
-                    m.radius = (m.radius + scroll_y * 15.0);
+                    m.radius += scroll_y * 15.0;
 
                     // synchronize particle value
                     if let Some(p) = world
@@ -214,7 +213,7 @@ impl Scene for FallingParticles {
                     m.strength = (m.strength + scroll_y * 50.0).clamp(-1000.0, 1000.0);
 
                     // calculation of density based on strength
-                    let density = (m.strength.abs() / 10000.0);
+                    let density = m.strength.abs() / 10000.0;
                     // red for pull, blue for push
                     let new_color = if m.strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
