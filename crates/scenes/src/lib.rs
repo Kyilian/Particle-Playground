@@ -46,10 +46,10 @@ impl SceneType {
             SceneType::FallingParticles => "Falling Particles",
             SceneType::BenchmarkScene => "Benchmark Scene",
             SceneType::TestScene => "Test Scene",
-            SceneType::NBodyScene => "N-Body Scene",
+            SceneType::NBodyScene => "Simple N-Body Scene",
             // SceneType::WaterSimulation => "Water Simulation",
-            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
-            SceneType::LavaLamp => "Lava Lamp",
+            SceneType::BarnesHutNbody => "Barnes-Hut Algorithm N-Body Scene",
+            SceneType::LavaLamp => "Lava Lamp Scene",
         }
     }
 

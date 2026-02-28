@@ -215,9 +215,9 @@ impl Scene for TestScene {
             ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
             ui.separator();
 
-            ui.label(format!("Partikel: {}", _world.particles.len()));
+            ui.label(format!("Particles: {}", _world.particles.len()));
 
-            if ui.button("Alles zurücksetzen").clicked() {
+            if ui.button("Reset Simulation").clicked() {
                 self.reset(_world);
             }
         });

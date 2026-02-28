@@ -349,7 +349,7 @@ impl Scene for FallingParticles {
                 }
             }
             ui.separator();
-            if ui.button("Alles zurücksetzen").clicked() {
+            if ui.button("Reset Simulation").clicked() {
                 self.reset(_world);
             }
         });

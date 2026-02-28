@@ -378,7 +378,7 @@ impl RenderWindow {
                             ui.add_space(ui.available_height() * 0.15);
                             ui.heading("🎮 Particle Playground");
                             ui.add_space(10.0);
-                            ui.label("Wähle eine Simulation:");
+                            ui.label("Choose a simulation:");
                             ui.add_space(30.0);
 
                             ui.set_max_width(500.0);
@@ -425,8 +425,7 @@ impl RenderWindow {
                             if ui
                                 .add_enabled(
                                     start_enabled,
-                                    egui::Button::new("▶ Starten")
-                                        .min_size(egui::vec2(120.0, 40.0)),
+                                    egui::Button::new("▶ Start").min_size(egui::vec2(120.0, 40.0)),
                                 )
                                 .clicked()
                             {
@@ -445,14 +444,14 @@ impl RenderWindow {
                     .resizable(false)
                     .collapsible(false)
                     .show(&ctx, |ui| {
-                        ui.label(format!("Aktive Scene: {}", scene_type.display_name()));
+                        ui.label(format!("Active Scene: {}", scene_type.display_name()));
                         ui.separator();
 
-                        if ui.button("🔙 Zurück zur Auswahl").clicked() {
+                        if ui.button("🔙 Back to the menu").clicked() {
                             should_return = true;
                         }
 
-                        ui.label("(oder ESC drücken)");
+                        ui.label("(or click ESC)");
                     });
 
                 // scene-specific ui

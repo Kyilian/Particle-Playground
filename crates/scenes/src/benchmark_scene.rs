@@ -193,7 +193,7 @@ impl Scene for BenchmarkScene {
             );
 
             ui.separator();
-            if ui.button("Alles zurücksetzen").clicked() {
+            if ui.button("Reset Simulation").clicked() {
                 self.reset(world);
             }
         });

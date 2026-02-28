@@ -21,6 +21,13 @@ pub struct BarnesHutNbody {
     last_mouse_pos: Vec2,
 
     colision_on: bool,
+    current_mode: MouseClickMode,
+}
+#[derive(PartialEq)]
+enum MouseClickMode {
+    MultipleParticles,
+    SpawnHeavy,
+    SpawnGalaxy,
 }
 
 impl BarnesHutNbody {
@@ -34,6 +41,7 @@ impl BarnesHutNbody {
             is_dragging: false,
             last_mouse_pos: Vec2::ZERO,
             colision_on: false,
+            current_mode: MouseClickMode::MultipleParticles,
         }
     }
 }
@@ -77,44 +85,54 @@ impl Scene for BarnesHutNbody {
         }
 
         if right_click {
-            //spawn a galaxy of particles around the mouse position
-            for _ in 0..100 {
-                let offset_x = rng.gen_range(-150.0..150.0);
-                let offset_y = rng.gen_range(-150.0..150.0);
-                let spawn_pos = world_mouse_pos + Vec2::new(offset_x, offset_y);
+            match self.current_mode {
+                MouseClickMode::MultipleParticles => {
+                    //spawn a small galaxy of particles around the mouse position
+                    for _ in 0..100 {
+                        let offset_x = rng.gen_range(-150.0..150.0);
+                        let offset_y = rng.gen_range(-150.0..150.0);
+                        let spawn_pos = world_mouse_pos + Vec2::new(offset_x, offset_y);
 
-                let mut p = Particle::new_with_mass(
-                    spawn_pos,
-                    rng.gen_range(2.0..10.0),
-                    self.particle_radius,
-                );
+                        let mut p = Particle::new_with_mass(
+                            spawn_pos,
+                            rng.gen_range(2.0..10.0),
+                            self.particle_radius,
+                        );
 
-                let dist_vec = spawn_pos - mouse_pos;
-                let dist = dist_vec.length();
+                        let dist_vec = spawn_pos - mouse_pos;
+                        let dist = dist_vec.length();
 
-                if dist > 1.0 {
-                    let tangent = Vec2::new(-dist_vec.y, dist_vec.x).normalize();
+                        if dist > 1.0 {
+                            let tangent = Vec2::new(-dist_vec.y, dist_vec.x).normalize();
 
-                    let orbit_speed = 0.1;
+                            let orbit_speed = 0.1;
 
-                    let velocity = tangent * orbit_speed;
+                            let velocity = tangent * orbit_speed;
 
-                    p.old_pos = p.pos - velocity;
+                            p.old_pos = p.pos - velocity;
+                        }
+
+                        world.add_particle(p);
+                    }
                 }
+                MouseClickMode::SpawnHeavy => {
+                    let r = self.particle_radius * 3.0;
+                    let mut p = Particle::new_with_mass(world_mouse_pos, self.mass, r);
 
-                world.add_particle(p);
+                    p.old_pos = p.pos;
+
+                    world.add_particle(p);
+                }
+                MouseClickMode::SpawnGalaxy => {
+                    world.add_galaxy(3000, world_mouse_pos);
+                }
             }
         }
+
         // Middle click: at the moment, spawnes a heavy particle and drags the camera
         if is_middle {
             self.is_dragging = true;
             self.last_mouse_pos = mouse_pos;
-            let r = self.particle_radius * 3.0;
-            let mut p = Particle::new_with_mass(world_mouse_pos, 20000.0, r);
-
-            p.old_pos = p.pos;
-
-            world.add_particle(p);
         }
     }
 
@@ -131,8 +149,6 @@ impl Scene for BarnesHutNbody {
 
         let world_mouse_pos = (mouse_pos - self.camera_offset) / old_zoom;
         self.camera_offset = mouse_pos - (world_mouse_pos * self.camera_zoom);
-
-        println!("Zoom zur Maus! Neuer Zoom: {:.2}", self.camera_zoom);
     }
 
     // calculate the new camera offset when dragging the mouse
@@ -174,7 +190,7 @@ impl Scene for BarnesHutNbody {
     }
 
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
-        egui::Window::new("Falling Particle Simulation").show(_ctx, |ui| {
+        egui::Window::new("N-Body Simulation: Barnes-Hut Algorithm").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 
@@ -188,29 +204,46 @@ impl Scene for BarnesHutNbody {
             });
 
             ui.separator();
-            ui.label("Parameter");
+            ui.label("Parameters:");
 
             ui.add(
                 egui::Slider::new(&mut self.particle_radius, 1.0..=100.0)
-                    .text("Particle Size and Mass"),
+                    .text("Particle Size of new particles"),
             );
+            ui.add(egui::Slider::new(&mut self.mass, 10.0..=10000000000.0).text("Mass of new particles"));
             ui.separator();
-
             ui.add(egui::Slider::new(&mut self.gravity.y, 0.0..=1000.0).text("Gravity "));
 
-            ui.label(format!("Partikel: {}", _world.particles.len()));
-
-            if ui.button("Alles zurücksetzen").clicked() {
-                self.reset(_world);
-            }
+            ui.separator();
+            ui.label("Left Click: Spawn a single particle at the mouse position");
             ui.separator();
 
-            if ui.button("Spawn Galaxy").clicked() {
-                _world.add_galaxy(3000);
-            }
+            ui.label("Right Click Mode:");
 
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::MultipleParticles,
+                "Spawn a small Galaxy",
+            );
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::SpawnHeavy,
+                "Spawn heavy Particle",
+            );
+            ui.radio_value(
+                &mut self.current_mode,
+                MouseClickMode::SpawnGalaxy,
+                "Spawn a Galaxy with 3000 Particles",
+            );
             ui.separator();
             ui.checkbox(&mut self.colision_on, "Colisions On/Off").on_hover_text("Toggle particle collisions. Warning: Can be very performance intensive with many particles!");
+
+            ui.separator();
+            ui.label(format!("Partikel: {}", _world.particles.len()));
+
+            if ui.button("Reset Simulation").clicked() {
+                self.reset(_world);
+            }
         });
     }
 }

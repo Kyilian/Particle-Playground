@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*","app", "examples/simple_demo"]
+members = ["crates/*","app"]
 
 [workspace.dependencies]
 #Core und Window handeling
@@ -45,6 +45,5 @@ image = { version = "0.25", features = ["png", "jpeg"] }
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
-pp_gui =    { path = "./crates/gui" }
 pp_app ={ path= "./app"}
 pp_asssets = { path = "./assets" }

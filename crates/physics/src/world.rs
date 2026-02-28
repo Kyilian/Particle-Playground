@@ -150,8 +150,8 @@ impl World {
         self.rect_colliders.clear();
     }
 
-    pub fn add_galaxy(&mut self, n: usize) {
-        let galaxy = galaxy(n);
+    pub fn add_galaxy(&mut self, n: usize, pos: Vec2) {
+        let galaxy = galaxy(n, pos);
 
         for p in galaxy {
             self.add_particle(p);

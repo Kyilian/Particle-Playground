@@ -8,7 +8,6 @@ edition = "2021"
 pp_physics = { workspace = true }
 pp_render = { workspace = true }
 pp_scenes = { workspace = true }
-pp_gui = { workspace = true }
 
 
 # external tools

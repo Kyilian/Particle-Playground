@@ -2906,19 +2906,11 @@ dependencies = [
  "image",
  "log",
  "pollster",
- "pp_gui",
  "pp_physics",
  "pp_render",
  "pp_scenes",
  "wgpu",
  "winit",
-]
-
-[[package]]
-name = "pp_gui"
-version = "0.1.0"
-dependencies = [
- "egui",
 ]
 
 [[package]]
@@ -3454,14 +3446,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95890f873bec569a0362c235787f3aca6e1e887302ba4840839bcc6459c42da6"
 dependencies = [
  "quote",
-]
-
-[[package]]
-name = "simple_demo"
-version = "0.1.0"
-dependencies = [
- "pp_app",
- "pp_scenes",
 ]
 
 [[package]]
