@@ -39,6 +39,7 @@ pub struct RenderWindow {
     egui_renderer: egui_wgpu::Renderer,
     egui_state: egui_winit::State,
 
+    //background texture variable for the background image
     background_texture: Option<egui::TextureHandle>,
 }
 
@@ -133,6 +134,7 @@ impl RenderWindow {
             None,
         );
 
+        //load background texture for the main menu, using the image dependency
         let img_bytes = include_bytes!("../../assets/background.png");
         let background_texture = {
             let img = image::load_from_memory(img_bytes)
@@ -363,6 +365,7 @@ impl RenderWindow {
                                 let img_rect =
                                     egui::Rect::from_min_size(panel_rect.min + offset, img_size);
 
+                                //paint the background image
                                 ui.painter().image(
                                     texture.id(),
                                     img_rect,

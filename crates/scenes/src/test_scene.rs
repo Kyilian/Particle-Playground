@@ -4,8 +4,7 @@ use pp_physics::{CircleCollider, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
-//Using constant placeholders for window size
-//Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
+//A Test Scene to test new features and debug new physics bevor implement them in other scenes. Also to test different UI elements.
 
 pub struct TestScene {
     gravity: f32,

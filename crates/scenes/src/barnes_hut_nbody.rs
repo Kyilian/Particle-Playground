@@ -1,9 +1,15 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{world, Particle, RectCollider, World};
+use pp_physics::{Particle, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
+//A N-Body simutlation using the Barnes-Hut algorithm to optimize the gravity calculation
+//Controlls:
+//Left Click: Spawn a single particle at the mouse position
+//Right Click: Spawn a small galaxy of particles around the mouse position with a random velocity to simulate a small galaxy
+//Middle Click: Spawn a heavy particle that attracts other particles with a strong force, also allows to drag the camera
+//Mouse Scroll: Zoom in and out to the mouse position
 pub struct BarnesHutNbody {
     gravity: glam::Vec2,
     mass: f32,
@@ -62,6 +68,7 @@ impl Scene for BarnesHutNbody {
 
         let world_mouse_pos = (mouse_pos - self.camera_offset) / self.camera_zoom;
 
+        //spawn a single particle
         if left_click {
             let id = world.add_particle(Particle::new_with_mass(
                 world_mouse_pos,
@@ -72,6 +79,7 @@ impl Scene for BarnesHutNbody {
         }
 
         if right_click {
+            //spawn a galaxy of particles around the mouse position
             for _ in 0..100 {
                 let offset_x = rng.gen_range(-150.0..150.0);
                 let offset_y = rng.gen_range(-150.0..150.0);
@@ -99,7 +107,7 @@ impl Scene for BarnesHutNbody {
                 world.add_particle(p);
             }
         }
-
+        // Middle click: at the moment, spawnes a heavy particle and drags the camera
         if is_middle {
             self.is_dragging = true;
             self.last_mouse_pos = mouse_pos;
@@ -112,6 +120,7 @@ impl Scene for BarnesHutNbody {
         }
     }
 
+    //Zoom out with the mouse scroll
     fn handle_scroll(&mut self, _world: &mut World, mouse_pos: Vec2, scroll_y: f32) {
         let old_zoom = self.camera_zoom;
 
@@ -127,6 +136,8 @@ impl Scene for BarnesHutNbody {
 
         println!("Zoom zur Maus! Neuer Zoom: {:.2}", self.camera_zoom);
     }
+
+    // calculate the new camera offset when dragging the mouse
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {
         if self.is_dragging {
             let delta = _mouse_pos - self.last_mouse_pos;
@@ -180,7 +191,7 @@ impl Scene for BarnesHutNbody {
             });
 
             ui.separator();
-            ui.label("Test Parameter");
+            ui.label("Parameter");
 
             ui.add(
                 egui::Slider::new(&mut self.particle_radius, 1.0..=100.0)

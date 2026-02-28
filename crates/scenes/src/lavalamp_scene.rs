@@ -3,6 +3,12 @@ use glam::Vec2;
 use pp_physics::{world::Magnet, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
+
+//A simple lava lamp simulation
+//This scene uses magnets that move up and down to create the lava lamp effect, also allows to spawn a blast effect that pushes particles away from the mouse position
+//Controlls:
+//Left Click: Spawn a blast effect that pushes particles away from the mouse position
+
 pub struct LavaLampScene {
     time: f32,
     particle_radius: f32,
@@ -46,7 +52,7 @@ impl Scene for LavaLampScene {
         self.time += dt;
 
         world.magnets.clear();
-
+        //create some magnets that move up and down to create the lava lamp effect
         let y_pos_1 = (self.time * 1.5).sin() * 150.0 * self.change_sized;
         world.magnets.push(Magnet {
             pos: Vec2::new(0.0, y_pos_1),
@@ -109,7 +115,7 @@ impl Scene for LavaLampScene {
         if self.ui_has_focus {
             return;
         }
-
+        //create a blast effect that pushes particles away from the mouse position
         if left_click {
             let blast_radius = 150.0;
             let blast_force = 500.0;
@@ -129,6 +135,7 @@ impl Scene for LavaLampScene {
 
     fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+
     fn on_mouse_release(
         &mut self,
         _world: &mut World,

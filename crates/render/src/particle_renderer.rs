@@ -34,7 +34,9 @@ fn vs_main(
     var out: VertexOutput; 
 
     let screen_size = globals.screen_size_wrapper.xy; 
-    let camera_offset = globals.camera.xy;
+
+    //camera offset and zoom for moving the camera, so we can change the view in runtime
+    let camera_offset = globals.camera.xy; 
     let zoom = globals.camera.z; 
 
     // quad from -0.5 to +0.5 on pixel-size skalable
@@ -42,6 +44,8 @@ fn vs_main(
 
     // added to move the center to the middle for Circle_collider
     let center_offset = screen_size / 2.0;
+
+    // general position of the particles in the world with camera offset and zoom
     let world_pos = (instance_pos * zoom) + camera_offset;
 
     // move partikel position in screen-space
@@ -187,7 +191,7 @@ impl ParticleRenderer {
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [config.width as f32, config.height as f32, 0.0, 0.0],
             _padding: [1.0, 1.0, 1.0, 1.0],
-            camera: [1.0, 1.0, 1.0, 1.0],
+            camera: [1.0, 1.0, 1.0, 1.0], //using the former padding for the camera
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -278,7 +282,7 @@ impl ParticleRenderer {
         });
 
         // Instance Buffer, gets updated for every frame
-        let max_particles = 100000; //for now max particles is fixed, could be changed later
+        let max_particles = 200000; //for now max particles is fixed, could be changed later
         let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Particle Instance Buffer"),
             size: (max_particles * std::mem::size_of::<ParticleInstance>() as u32) as u64,
@@ -322,15 +326,6 @@ impl ParticleRenderer {
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
     }
-    // if the changes of the renderer and scene works as I intended, we shouldnt need this function anymore
-
-    //pub fn update_window_size(&self, queue: &Queue, width: u32, height: u32) {
-    //    let uniforms = GlobalUniforms {
-    //        screen_size: [width as f32, height as f32],
-    //        _padding: [0.0, 0.0],
-    //    };
-    //    queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[uniforms]));
-    //}
 
     pub fn update_window_size(&mut self, width: u32, height: u32) {
         self.size = (width, height);

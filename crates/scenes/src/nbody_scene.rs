@@ -4,6 +4,13 @@ use pp_physics::{world, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
+//A simple n-body simulation
+//This scene uses the O(n^2) gravity calculation to see the difference between the gravity calculation between every particles and only the quadrats
+//Controlls:
+//Left Click: Spawn a single particle at the mouse position
+//Right Click: Spawn a small galaxy of particles around the mouse position with a random velocity to simulate a small galaxy
+//Middle Click: Spawn a heavy particle
+
 pub struct NBodyScene {
     gravity: f32,
     mass: f32,
@@ -60,6 +67,7 @@ impl Scene for NBodyScene {
             println!("Spawned particle #{id} at {:?}", mouse_pos);
         }
 
+        //spawn 100 particles in a radius of 150 around the mouse position with a random velocity to simulate a small galaxy
         if right_click {
             for _ in 0..100 {
                 let offset_x = rng.gen_range(-150.0..150.0);
@@ -89,6 +97,8 @@ impl Scene for NBodyScene {
             }
         }
 
+        //spawn a heavy particle that attracts other particles with a strong force
+        //Work in progress: the heavy particle shouldnt move as much as a light particle
         if is_middle {
             let mut p = Particle::new_with_mass(mouse_pos, 2000.0, self.particle_radius);
 
@@ -134,7 +144,7 @@ impl Scene for NBodyScene {
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
         self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
 
-        egui::Window::new("N-Body Simulation").show(_ctx, |ui| {
+        egui::Window::new("N-Body Simulation O(n^2)").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 

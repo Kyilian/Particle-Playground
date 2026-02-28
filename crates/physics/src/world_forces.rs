@@ -9,6 +9,8 @@ impl World {
         }
     }
 
+    //O(n^2) gravity calculation for small number of particles
+    //Added an optimized version with Barnes-Hut algorithm
     pub fn apply_gravity(&mut self) {
         let g = 4.0; // Variable to apply force
         let softening = 500.0; // to prevent bounce effect
@@ -54,10 +56,13 @@ impl World {
         }
     }
 
+    //Optimized gravity calculation using Barnes-Hut algorithm, O(n log n)
     pub fn apply_gravity_barnes_hut(&mut self) {
         if self.particles.len() < 2 {
             return;
         }
+        //the gravity calculation is done by a quadtree, so we dont have to calculate the force between every particle,
+        //but can approximate the force of distant particles by treating them as a single mass at their center of mass
         let root_quadrant = Quadrant::new(&self.particles);
 
         self.quadtree.clear(root_quadrant);
@@ -66,7 +71,7 @@ impl World {
             self.quadtree.insert(p.pos, p.mass);
         }
 
-        let gravity = self.gravity.y; //default gravity
+        let gravity = self.gravity.y; //takes the gravity from the scene, so we can change it in runtime
 
         self.quadtree.propagate();
 

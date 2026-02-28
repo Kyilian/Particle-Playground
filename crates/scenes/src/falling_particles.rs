@@ -4,8 +4,7 @@ use pp_physics::{world::Magnet, CircleCollider, Particle, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
-//Using constant placeholders for window size
-//Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
+//The main Pacticle playground scene, to play around with the Particles
 
 #[derive(PartialEq)]
 enum MouseClickMode {

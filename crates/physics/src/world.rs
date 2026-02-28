@@ -74,7 +74,7 @@ impl World {
             let temp = p.pos;
             let vel = p.pos - p.old_pos;
 
-            p.pos = p.pos + vel + p.acc * dt * dt; //Verlet Formel : bewegt partikel an geschwindigkeit + beschleunigug
+            p.pos = p.pos + vel + p.acc * dt * dt; //Verlet Integration: moves particle based on velocity and acceleration
             p.old_pos = temp;
 
             // Reset acceleration for next frame
@@ -102,6 +102,7 @@ impl World {
     pub fn barnes_hut_nbody_step(&mut self, dt: f32) {
         self.apply_gravity_barnes_hut();
         self.update_positions(dt);
+        //took out the collision detection, so that we can change it during runtime
     }
 
     //resets all particles

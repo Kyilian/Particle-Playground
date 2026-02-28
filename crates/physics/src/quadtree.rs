@@ -1,9 +1,12 @@
+use crate::particle::Particle;
 use glam::Vec2;
 
-use crate::particle::Particle;
-//Quadtree implementation like in the video https://www.youtube.com/watch?v=nZHjD3cI-EU
-//https://github.com/DeadlockCode/barnes-hut.git
+//Barnes-Hut Algorithm
+//To optimize the gravity calculation for a large amount of particles, we implemented the Barnes_Hut algorithm.
+//This algorithm uses a quadtree to group particles in quadrates to approximate the force of distant particles by treating them as a singe particle with a hughe mass.
+//With this algorithm we can reduce the complexity of the gravity calculation from O(n^2) to O(n log n)
 
+//For a correct implementation of the Barnes-Hut algorithm, I used the very clever implementation from //https://github.com/DeadlockCode/barnes-hut.git and changed it to fit our needs
 #[derive(Clone, Copy)]
 pub struct Quadrant {
     pub center: Vec2,
@@ -91,6 +94,7 @@ impl Node {
 pub struct Quadtree {
     pub t_sq: f32,
     pub e_sq: f32,
+    //Insted of a normal heap quadtree, we use a Vec to store the nodes, so we can easily traverse it in reverse order to calculate the center of mass for every quadrant
     pub nodes: Vec<Node>,
     pub parents: Vec<usize>,
 }
@@ -113,14 +117,18 @@ impl Quadtree {
         self.parents.clear();
         self.nodes.push(Node::new(0, quad));
     }
-
+    //subdivide the quadrant into 4 parts and add the children to the vec, return the index of the first child
+    //we know that the children are always in the order of 0,1,2,3 and the next node is always at the end of the children, so we can easily traverse the tree without using pointers
     pub fn subdivide(&mut self, node: usize) -> usize {
         self.parents.push(node);
         let children = self.nodes.len();
         self.nodes[node].children = children; // without children always 0
 
         let nexts = [
-            //root is always at index 0
+            //we use 0 for the absence of a node
+
+            //the order of the children is  0 1
+            //                              3 2
             children + 1,
             children + 2,
             children + 3,
@@ -134,7 +142,8 @@ impl Quadtree {
 
         return children;
     }
-
+    //traverse the tree to find the correct position for the particle,
+    //if there is already a particle in the quadrant, subdivide it and move the particles into the new quadrants until we find an empty quadrant or reach the max depth
     pub fn insert(&mut self, pos: Vec2, mass: f32) {
         let mut depth = 0;
         let max_depth = 64;
@@ -159,7 +168,7 @@ impl Quadtree {
             self.nodes[node].mass += mass;
             return;
         }
-
+        //if there is already a particle in the quadrant, subdivide it and move the particles into the new quadrants until we find an empty quadrant or reach the max depth
         loop {
             if depth > max_depth {
                 self.nodes[node].mass += mass;
@@ -209,7 +218,8 @@ impl Quadtree {
             self.nodes[node].pos /= mass;
         }
     }
-
+    //calculate the acceleration for each particle
+    //If we reach a leaf or a quadrant that is far away enough, we can calculate the force directly and skip the rest of the subtree
     pub fn acc(&self, pos: Vec2) -> Vec2 {
         let mut acc = Vec2::ZERO;
 
