@@ -1,9 +1,13 @@
+pub mod barnes_hut_nbody;
 pub mod benchmark_scene;
 pub mod falling_particles;
+mod lavalamp_scene;
 pub mod nbody_scene;
 pub mod scenes;
 pub mod test_scene;
+pub use lavalamp_scene::LavaLampScene;
 
+pub use barnes_hut_nbody::BarnesHutNbody;
 pub use benchmark_scene::BenchmarkScene;
 pub use falling_particles::FallingParticles;
 pub use nbody_scene::NBodyScene;
@@ -19,6 +23,8 @@ pub enum SceneType {
     BenchmarkScene,
     TestScene,
     NBodyScene, // LiquidSimulation for later
+    BarnesHutNbody,
+    LavaLamp,
 }
 
 impl SceneType {
@@ -30,6 +36,8 @@ impl SceneType {
             SceneType::TestScene,
             SceneType::NBodyScene,
             // SceneType::LiquidSimulation
+            SceneType::BarnesHutNbody,
+            SceneType::LavaLamp,
         ]
     }
 
@@ -39,7 +47,9 @@ impl SceneType {
             SceneType::BenchmarkScene => "Benchmark Scene",
             SceneType::TestScene => "Test Scene",
             SceneType::NBodyScene => "N-Body Scene",
-            // SceneType::LiquidSimulation => "Water Simulation",
+            // SceneType::WaterSimulation => "Water Simulation",
+            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
+            SceneType::LavaLamp => "Lava Lamp",
         }
     }
 
@@ -48,8 +58,10 @@ impl SceneType {
             SceneType::FallingParticles => "Particles falling down to customizable gravity",
             SceneType::BenchmarkScene => "Performance-Test: Continuously spawns particles until the fps fall under 30.",
             SceneType::TestScene => "Test-Scene with different collider-types (circle and triangle).",
-            SceneType::NBodyScene => "N-Body gravitation simulation, left: single particle, right: particle-cluster, mmb: heavy mass."
+            SceneType::NBodyScene => "N-Body gravitation simulation, left: single particle, right: particle-cluster, mmb: heavy mass.",
             // SceneType::LiquidSimulation => TBD
+            SceneType::BarnesHutNbody => "Barnes Hut N-Body",
+            SceneType::LavaLamp => "Simple Implementation for a Lava Lamp, customizable in size and speed.",
         }
     }
 
@@ -70,9 +82,11 @@ impl SceneType {
                 Box::new(TestScene::new())
             }
             SceneType::NBodyScene => Box::new(NBodyScene::new()), // SceneType::LiquidSimulation => {
-                                                                  //    LiquidSimulation::init_world(world);
-                                                                  //    Box::new(LiquidSimulation::new())
-                                                                  // }
+            //    LiquidSimulation::init_world(world);
+            //    Box::new(LiquidSimulation::new())
+            // }
+            SceneType::BarnesHutNbody => Box::new(BarnesHutNbody::new()),
+            SceneType::LavaLamp => Box::new(LavaLampScene::new()),
         }
     }
 }

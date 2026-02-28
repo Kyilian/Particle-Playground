@@ -4,8 +4,7 @@ use pp_physics::{world::Magnet, CircleCollider, Particle, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
-//Using constant placeholders for window size
-//Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
+//The main Pacticle playground scene, to play around with the Particles
 
 #[derive(PartialEq)]
 enum MouseClickMode {
@@ -32,6 +31,9 @@ pub struct FallingParticles {
     current_mode: MouseClickMode,
     current_scroll_mode: MouseScrollMode,
     ui_has_focus: bool,
+
+    camera_offset: Vec2,
+    camera_zoom: f32,
 }
 
 impl FallingParticles {
@@ -48,6 +50,9 @@ impl FallingParticles {
             current_mode: MouseClickMode::SpawnSingle,
             current_scroll_mode: MouseScrollMode::ResizeMagnet,
             ui_has_focus: false,
+
+            camera_offset: Vec2::ZERO,
+            camera_zoom: 1.0,
         }
     }
 
@@ -101,7 +106,8 @@ impl Scene for FallingParticles {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.color, // Rot
-            self.particle_radius,
+            self.camera_offset,
+            self.camera_zoom,
         );
 
         //draw the particles
@@ -227,7 +233,16 @@ impl Scene for FallingParticles {
             }
         }
     }
-
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+    }
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;

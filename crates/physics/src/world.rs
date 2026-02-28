@@ -1,4 +1,6 @@
+use crate::galaxy;
 pub use crate::neighbor_grid::NeighborGrid;
+use crate::quadtree::{Quadrant, Quadtree};
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 
@@ -21,6 +23,8 @@ pub struct World {
     pub fps: f32,
     pub rect_colliders: Vec<RectCollider>,
     pub magnets: Vec<Magnet>,
+
+    pub quadtree: Quadtree,
 
     pub window_width: u32,
     pub window_height: u32,
@@ -45,6 +49,8 @@ impl World {
             magnets: Vec::new(),
             window_height: 400,
             window_width: 600,
+
+            quadtree: Quadtree::new(0.5, 100.0),
         }
     }
 
@@ -68,7 +74,7 @@ impl World {
             let temp = p.pos;
             let vel = p.pos - p.old_pos;
 
-            p.pos = p.pos + vel + p.acc * dt * dt; //Verlet Formel : bewegt partikel an geschwindigkeit + beschleunigug
+            p.pos = p.pos + vel + p.acc * dt * dt; //Verlet Integration: moves particle based on velocity and acceleration
             p.old_pos = temp;
 
             // Reset acceleration for next frame
@@ -91,6 +97,12 @@ impl World {
         self.apply_gravity();
         self.update_positions(dt);
         self.solve_rect_collisions();
+    }
+
+    pub fn barnes_hut_nbody_step(&mut self, dt: f32) {
+        self.apply_gravity_barnes_hut();
+        self.update_positions(dt);
+        //took out the collision detection, so that we can change it during runtime
     }
 
     //resets all particles
@@ -136,5 +148,13 @@ impl World {
 
     pub fn clear_rect_collider(&mut self) {
         self.rect_colliders.clear();
+    }
+
+    pub fn add_galaxy(&mut self, n: usize) {
+        let galaxy = galaxy(n);
+
+        for p in galaxy {
+            self.add_particle(p);
+        }
     }
 }

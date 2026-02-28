@@ -38,11 +38,12 @@ ron = "0.8"
 #Benchmarks
 criterion = "0.8.0"
 
+#Background Image
+image = { version = "0.25", features = ["png", "jpeg"] }
+
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
 pp_gui =    { path = "./crates/gui" }
 pp_app ={ path= "./app"}
-
-#Bilder
-image = { version = "0.25"}
+pp_asssets = { path = "./assets" }

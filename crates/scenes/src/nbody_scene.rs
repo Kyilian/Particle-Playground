@@ -1,8 +1,15 @@
 use super::Scene;
 use glam::Vec2;
-use pp_physics::{Particle, RectCollider, World};
+use pp_physics::{world, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
+
+//A simple n-body simulation
+//This scene uses the O(n^2) gravity calculation to see the difference between the gravity calculation between every particles and only the quadrats
+//Controlls:
+//Left Click: Spawn a single particle at the mouse position
+//Right Click: Spawn a small galaxy of particles around the mouse position with a random velocity to simulate a small galaxy
+//Middle Click: Spawn a heavy particle
 
 pub struct NBodyScene {
     gravity: f32,
@@ -10,9 +17,9 @@ pub struct NBodyScene {
     particle_radius: f32,
 
     color: [f32; 4],
-    //pub collider_radius: f32,
-    //collider_old: f32,
     ui_has_focus: bool,
+    camera_zoom: f32,
+    camera_offset: Vec2,
 }
 
 impl NBodyScene {
@@ -23,6 +30,8 @@ impl NBodyScene {
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
             ui_has_focus: false,
+            camera_offset: Vec2::ZERO,
+            camera_zoom: 1.0,
         }
     }
 }
@@ -38,14 +47,6 @@ impl Scene for NBodyScene {
         _world.gravity = Vec2::new(0.0, self.gravity);
         _world.nbody_step(_dt);
         _world.particle_radius = self.particle_radius;
-
-        _world.clear_rect_collider();
-
-        _world.add_rect_collider(RectCollider {
-            center: Vec2::new(0.0, 0.0),
-            width: _world.window_width as f32,
-            height: _world.window_height as f32,
-        });
     }
 
     fn on_click(
@@ -66,6 +67,7 @@ impl Scene for NBodyScene {
             println!("Spawned particle #{id} at {:?}", mouse_pos);
         }
 
+        //spawn 100 particles in a radius of 150 around the mouse position with a random velocity to simulate a small galaxy
         if right_click {
             for _ in 0..100 {
                 let offset_x = rng.gen_range(-150.0..150.0);
@@ -95,6 +97,8 @@ impl Scene for NBodyScene {
             }
         }
 
+        //spawn a heavy particle that attracts other particles with a strong force
+        //Work in progress: the heavy particle shouldnt move as much as a light particle
         if is_middle {
             let mut p = Particle::new_with_mass(mouse_pos, 2000.0, self.particle_radius);
 
@@ -105,6 +109,17 @@ impl Scene for NBodyScene {
     }
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+    }
 
     fn render<'rpass>(
         &self,
@@ -112,8 +127,12 @@ impl Scene for NBodyScene {
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
-        ctx.particle_renderer
-            .update_render_settings(ctx.queue, self.color, self.particle_radius);
+        ctx.particle_renderer.update_render_settings(
+            ctx.queue,
+            self.color,
+            self.camera_offset,
+            self.camera_zoom,
+        );
 
         ctx.particle_renderer.render(render_pass);
     }
@@ -125,7 +144,7 @@ impl Scene for NBodyScene {
     fn ui(&mut self, _ctx: &egui::Context, _world: &mut pp_physics::World) {
         self.ui_has_focus = _ctx.wants_pointer_input() || _ctx.is_pointer_over_area();
 
-        egui::Window::new("N-Body Simulation").show(_ctx, |ui| {
+        egui::Window::new("N-Body Simulation O(n^2)").show(_ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.label("FPS:");
 

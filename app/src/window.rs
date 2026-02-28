@@ -2,6 +2,7 @@ use glam::Vec2;
 
 use pp_physics::World;
 
+use image;
 use pp_render::{ParticleRenderer, RenderContext};
 use pp_scenes::{Scene, SceneType};
 use std::sync::Arc; //Arc for dual ownership
@@ -37,6 +38,9 @@ pub struct RenderWindow {
 
     egui_renderer: egui_wgpu::Renderer,
     egui_state: egui_winit::State,
+
+    //background texture variable for the background image
+    background_texture: Option<egui::TextureHandle>,
 }
 
 impl RenderWindow {
@@ -130,6 +134,24 @@ impl RenderWindow {
             None,
         );
 
+        //load background texture for the main menu, using the image dependency
+        let img_bytes = include_bytes!("../../assets/background.png");
+        let background_texture = {
+            let img = image::load_from_memory(img_bytes)
+                .ok()
+                .map(|img| img.to_rgba8());
+
+            img.map(|img| {
+                let size = [img.width() as usize, img.height() as usize];
+                let pixels = img.as_flat_samples();
+                egui_ctx.load_texture(
+                    "background",
+                    egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice()),
+                    egui::TextureOptions::LINEAR,
+                )
+            })
+        };
+
         let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1);
 
         //adding so the circle_collider is stays in the center while resizing
@@ -149,6 +171,7 @@ impl RenderWindow {
             is_minimized: false,
             egui_renderer,
             egui_state,
+            background_texture,
         };
 
         // physics world + mouse position
@@ -200,17 +223,31 @@ impl RenderWindow {
                                 position.x as f32 - half_width,
                                 position.y as f32 - half_height,
                             );
+                            if let AppState::Running { scene, world, .. } =
+                                &mut render_window.app_state
+                            {
+                                scene.on_mouse_move(world, mouse_pos);
+                            }
                         }
                         WindowEvent::MouseInput { state, button, .. } => {
-                            if *state == ElementState::Pressed {
-                                if let AppState::Running { scene, world, .. } =
-                                    &mut render_window.app_state
-                                {
-                                    let is_left = *button == MouseButton::Left;
-                                    let is_right = *button == MouseButton::Right;
-                                    let is_middle = *button == MouseButton::Middle;
+                            let is_left = *button == MouseButton::Left;
+                            let is_right = *button == MouseButton::Right;
+                            let is_middle = *button == MouseButton::Middle;
 
-                                    scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
+                            if let AppState::Running { scene, world, .. } =
+                                &mut render_window.app_state
+                            {
+                                if !response.consumed {
+                                    if *state == ElementState::Pressed {
+                                        scene.on_click(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    } else if *state == ElementState::Released {
+                                        // --- HIER NEU EINFÜGEN ---
+                                        scene.on_mouse_release(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -308,56 +345,97 @@ impl RenderWindow {
 
         match &mut self.app_state {
             AppState::Launcher { selected_scene } => {
-                egui::CentralPanel::default().show(&ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.add_space(40.0);
-                        ui.heading("🎮 Particle Playground");
-                        ui.add_space(10.0);
-                        ui.label("Wähle eine Simulation:");
-                        ui.add_space(30.0);
-                    });
+                egui::CentralPanel::default()
+                    .frame(egui::Frame::none())
+                    .show(&ctx, |ui| {
+                        ui.vertical_centered(|ui| {
+                            if let Some(texture) = &self.background_texture {
+                                let panel_rect = ui.max_rect();
 
-                    ui.vertical_centered(|ui| {
-                        for scene_type in SceneType::all() {
-                            let is_selected = *selected_scene == Some(*scene_type);
+                                let min_size = egui::vec2(600.0, 400.0); // minsize
+                                let max_size = egui::vec2(1800.0, 1200.0); //maxsize
 
-                            egui::Frame::none()
-                                .fill(if is_selected {
-                                    egui::Color32::from_rgb(60, 60, 80)
-                                } else {
-                                    egui::Color32::from_rgb(40, 40, 50)
-                                })
-                                .rounding(8.0)
-                                .inner_margin(12.0)
-                                .show(ui, |ui| {
-                                    ui.set_min_width(300.0);
-                                    ui.horizontal(|ui| {
-                                        ui.radio_value(selected_scene, Some(*scene_type), "");
-                                        ui.vertical(|ui| {
-                                            ui.strong(scene_type.display_name());
-                                            ui.label(scene_type.description());
+                                let img_size = egui::vec2(
+                                    panel_rect.width().clamp(min_size.x, max_size.x),
+                                    panel_rect.height().clamp(min_size.y, max_size.y),
+                                );
+
+                                //center the image in the panel
+                                let offset = (panel_rect.size() - img_size) * 0.5;
+                                let img_rect =
+                                    egui::Rect::from_min_size(panel_rect.min + offset, img_size);
+
+                                //paint the background image
+                                ui.painter().image(
+                                    texture.id(),
+                                    img_rect,
+                                    egui::Rect::from_min_max(
+                                        egui::pos2(0.0, 0.0),
+                                        egui::pos2(1.0, 1.0),
+                                    ),
+                                    egui::Color32::WHITE,
+                                );
+                            }
+                            ui.set_max_size(egui::vec2(400.0, 600.0));
+                            ui.add_space(ui.available_height() * 0.15);
+                            ui.heading("🎮 Particle Playground");
+                            ui.add_space(10.0);
+                            ui.label("Wähle eine Simulation:");
+                            ui.add_space(30.0);
+
+                            ui.set_max_width(500.0);
+
+                            for scene_type in SceneType::all() {
+                                let is_selected = *selected_scene == Some(*scene_type);
+
+                                let response = egui::Frame::none()
+                                    .fill(if is_selected {
+                                        egui::Color32::from_rgb(60, 60, 80)
+                                    } else {
+                                        egui::Color32::from_rgb(40, 40, 50)
+                                    })
+                                    .rounding(8.0)
+                                    .inner_margin(12.0)
+                                    .show(ui, |ui| {
+                                        ui.set_min_width(ui.available_width());
+
+                                        ui.horizontal(|ui| {
+                                            ui.radio_value(selected_scene, Some(*scene_type), "");
+                                            ui.vertical(|ui| {
+                                                ui.strong(scene_type.display_name());
+                                                ui.label(scene_type.description());
+                                            });
                                         });
-                                    });
-                                });
+                                    })
+                                    .response
+                                    .interact(egui::Sense::click());
 
-                            ui.add_space(8.0);
-                        }
+                                let response = response.interact(egui::Sense::click());
+                                if response.clicked() {
+                                    *selected_scene = Some(*scene_type);
+                                }
+
+                                ui.add_space(8.0);
+                            }
+                        });
 
                         ui.add_space(20.0);
 
                         let start_enabled = selected_scene.is_some();
 
-                        if ui
-                            .add_enabled(
-                                start_enabled,
-                                egui::Button::new("▶ Starten").min_size(egui::vec2(120.0, 40.0)),
-                            )
-                            .clicked()
-                        {
-                            action = *selected_scene;
-                        }
+                        ui.vertical_centered(|ui| {
+                            if ui
+                                .add_enabled(
+                                    start_enabled,
+                                    egui::Button::new("▶ Starten")
+                                        .min_size(egui::vec2(120.0, 40.0)),
+                                )
+                                .clicked()
+                            {
+                                action = *selected_scene;
+                            }
+                        });
                     });
-                });
             }
             AppState::Running {
                 scene,

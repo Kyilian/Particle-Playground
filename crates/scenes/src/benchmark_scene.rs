@@ -15,6 +15,9 @@ pub struct BenchmarkScene {
     accum: f32,
 
     speed: f32,
+
+    camera_zoom: f32,
+    camera_offset: Vec2,
 }
 
 impl BenchmarkScene {
@@ -30,6 +33,9 @@ impl BenchmarkScene {
             particles_per_sec: 1000,
             accum: 0.0,
             speed: 800.0,
+
+            camera_zoom: 1.0,
+            camera_offset: Vec2::ZERO,
         }
     }
 
@@ -107,7 +113,8 @@ impl Scene for BenchmarkScene {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.color, // Rot
-            self.particle_radius,
+            self.camera_offset,
+            self.camera_zoom,
         );
 
         //draw the particles
@@ -125,6 +132,16 @@ impl Scene for BenchmarkScene {
     }
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+    }
 
     fn reset(&mut self, world: &mut World) {
         world.clear_particles();

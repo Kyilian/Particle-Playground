@@ -4,8 +4,7 @@ use pp_physics::{CircleCollider, Particle, RectCollider, World};
 use pp_render::RenderContext;
 use rand::prelude::*;
 
-//Using constant placeholders for window size
-//Need to get the User Window directly from Renderwindow or use a constant size for the Simulation for everyone
+//A Test Scene to test new features and debug new physics bevor implement them in other scenes. Also to test different UI elements.
 
 pub struct TestScene {
     gravity: f32,
@@ -20,6 +19,9 @@ pub struct TestScene {
     rect_size: Vec2,
     rect_size_old: Vec2,
     ui_has_focus: bool,
+
+    camera_offset: Vec2,
+    camera_zoom: f32,
 }
 
 impl TestScene {
@@ -36,6 +38,9 @@ impl TestScene {
             rect_size: Vec2::new(400.0, 400.0),
             rect_size_old: Vec2::new(400.0, 400.0),
             ui_has_focus: false,
+
+            camera_offset: Vec2::ZERO,
+            camera_zoom: 1.0,
         }
     }
 
@@ -94,7 +99,8 @@ impl Scene for TestScene {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.color, // Rot
-            self.particle_radius,
+            self.camera_offset,
+            self.camera_zoom,
         );
 
         //draw the particles
@@ -149,6 +155,16 @@ impl Scene for TestScene {
     }
 
     fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+    fn on_mouse_release(
+        &mut self,
+        _world: &mut World,
+        _mouse_pos: Vec2,
+        _right_click: bool,
+        _left_click: bool,
+        _is_middle: bool,
+    ) {
+    }
 
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
