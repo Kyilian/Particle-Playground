@@ -176,7 +176,7 @@ impl Scene for LavaLampScene {
 
         egui::Window::new("Simple Lava Lampe").show(ctx, |ui| {
             ui.label(format!("FPS: {:.1}", world.fps));
-            ui.label(format!("Partikel: {}", world.particles.len()));
+            ui.label(format!("Particles: {}", world.particles.len()));
             ui.separator();
             ui.add(
                 egui::Slider::new(&mut self.particle_radius, 2.0..=10.0)
@@ -194,11 +194,11 @@ impl Scene for LavaLampScene {
                     .text("Change size of the lava lamp"),
             );
             ui.separator();
-            if ui.button("Reset Lava Lamp").clicked() {
+            if ui.button("Reset").clicked() {
                 self.reset(world);
             }
 
-            if ui.button("Lava starten").clicked() {
+            if ui.button("Start").clicked() {
                 self.reset(world);
             }
         });

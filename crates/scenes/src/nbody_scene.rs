@@ -13,23 +13,29 @@ use rand::prelude::*;
 
 pub struct NBodyScene {
     gravity: f32,
-    //mass: f32,
+    mass: f32,
     particle_radius: f32,
 
     ui_has_focus: bool,
     camera_zoom: f32,
     camera_offset: Vec2,
+
+    is_dragging: bool,
+    last_mouse_pos: Vec2,
 }
 
 impl NBodyScene {
     pub fn new() -> Self {
         Self {
             gravity: 0.0,
-            //mass: 1.0,
+            mass: 1.0,
             particle_radius: 2.0,
             ui_has_focus: false,
             camera_offset: Vec2::ZERO,
             camera_zoom: 1.0,
+
+            is_dragging: false,
+            last_mouse_pos: Vec2::ZERO,
         }
     }
 }
@@ -58,27 +64,25 @@ impl Scene for NBodyScene {
         if self.ui_has_focus {
             return;
         }
+        let world_mouse_pos = (mouse_pos - self.camera_offset) / self.camera_zoom;
 
         let mut rng = rand::thread_rng();
         if left_click {
-            let id = world.add_particle(Particle::new(mouse_pos, self.particle_radius));
-            println!("Spawned particle #{id} at {:?}", mouse_pos);
+            let p = Particle::new_with_mass(world_mouse_pos, self.mass, self.particle_radius);
+
+            world.add_particle(p);
         }
 
-        //spawn 100 particles in a radius of 150 around the mouse position with a random velocity to simulate a small galaxy
+        //spawn 100 particles in a radius of 150 around the mouse position
         if right_click {
             for _ in 0..100 {
                 let offset_x = rng.gen_range(-150.0..150.0);
                 let offset_y = rng.gen_range(-150.0..150.0);
-                let spawn_pos = mouse_pos + Vec2::new(offset_x, offset_y);
+                let spawn_pos = world_mouse_pos + Vec2::new(offset_x, offset_y);
 
-                let mut p = Particle::new_with_mass(
-                    spawn_pos,
-                    rng.gen_range(2.0..10.0),
-                    self.particle_radius,
-                );
+                let mut p = Particle::new_with_mass(spawn_pos, self.mass, self.particle_radius);
 
-                let dist_vec = spawn_pos - mouse_pos;
+                let dist_vec = spawn_pos - world_mouse_pos;
                 let dist = dist_vec.length();
 
                 if dist > 1.0 {
@@ -98,16 +102,34 @@ impl Scene for NBodyScene {
         //spawn a heavy particle that attracts other particles with a strong force
         //Work in progress: the heavy particle shouldnt move as much as a light particle
         if is_middle {
-            let mut p = Particle::new_with_mass(mouse_pos, 2000.0, self.particle_radius);
-
-            p.old_pos = p.pos;
-
-            world.add_particle(p);
+            self.is_dragging = true;
+            self.last_mouse_pos = mouse_pos;
         }
     }
 
-    fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
-    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
+    //Zoom out with the mouse scroll
+    fn handle_scroll(&mut self, _world: &mut World, mouse_pos: Vec2, scroll_y: f32) {
+        let old_zoom = self.camera_zoom;
+
+        self.camera_zoom += scroll_y * 0.1;
+        self.camera_zoom = self.camera_zoom.clamp(0.1, 100.0);
+
+        if self.camera_zoom == old_zoom {
+            return;
+        }
+
+        let world_mouse_pos = (mouse_pos - self.camera_offset) / old_zoom;
+        self.camera_offset = mouse_pos - (world_mouse_pos * self.camera_zoom);
+    }
+
+    // calculate the new camera offset when dragging the mouse
+    fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {
+        if self.is_dragging {
+            let delta = _mouse_pos - self.last_mouse_pos;
+            self.camera_offset += delta;
+            self.last_mouse_pos = _mouse_pos;
+        }
+    }
 
     fn on_mouse_release(
         &mut self,
@@ -117,6 +139,7 @@ impl Scene for NBodyScene {
         _left_click: bool,
         _is_middle: bool,
     ) {
+        self.is_dragging = false;
     }
 
     fn render<'rpass>(
@@ -159,10 +182,16 @@ impl Scene for NBodyScene {
 
             ui.add(egui::Slider::new(&mut self.particle_radius, 1.0..=100.0).text("Particle Size"));
             ui.separator();
+            ui.add(egui::Slider::new(&mut self.mass, 0.0..=10000.0).text("Particle Mass"));
 
-            ui.label(format!("Partikel: {}", _world.particles.len()));
+            ui.separator();
+            ui.add(
+                egui::Slider::new(&mut self.particle_radius, 0.0..=10000.0).text("Particle Radius"),
+            );
 
-            if ui.button("Alles zurücksetzen").clicked() {
+            ui.label(format!("Particles: {}", _world.particles.len()));
+
+            if ui.button("Reset Simulation").clicked() {
                 self.reset(_world);
             }
         });

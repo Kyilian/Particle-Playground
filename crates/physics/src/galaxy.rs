@@ -4,14 +4,14 @@ use rand::Rng;
 
 //AI bugfix with Claude
 //preset for an galaxy for the NBody Barnes Hut
-pub fn galaxy(n: usize) -> Vec<Particle> {
+pub fn galaxy(n: usize, pos: Vec2) -> Vec<Particle> {
     let mut rng = rand::thread_rng();
     let mut particles: Vec<Particle> = Vec::with_capacity(n);
 
     //black hole at the center
     let central_mass = 2000.0;
     let central_radius = 5.0;
-    let center = Particle::new_with_mass(Vec2::ZERO, central_mass, central_radius);
+    let center = Particle::new_with_mass(pos, central_mass, central_radius);
     particles.push(center);
 
     let inner_radius = 20.0;
@@ -30,11 +30,12 @@ pub fn galaxy(n: usize) -> Vec<Particle> {
         let u: f32 = rng.gen::<f32>() * (1.0 - t * t) + t * t;
         let r = outer_radius * u.sqrt();
 
-        let pos = Vec2::new(cos, sin) * r;
+        let local_pos = Vec2::new(cos, sin) * r;
+        let particle_pos = local_pos + pos;
         let mass = 1.0f32;
         let radius = mass.cbrt().max(1.5);
 
-        let mut p = Particle::new_with_mass(pos, mass, radius);
+        let mut p = Particle::new_with_mass(particle_pos, mass, radius);
 
         // --- Orbital velocity ---
         // Quadtree acc gives: |a| = M / (r² + e²)
@@ -43,7 +44,7 @@ pub fn galaxy(n: usize) -> Vec<Particle> {
         let orbit_speed = (r * central_mass / (dist_sq + e_sq)).sqrt();
 
         // Tangent direction (perpendicular to radial, prograde)
-        let tangent = Vec2::new(-pos.y, pos.x).normalize();
+        let tangent = Vec2::new(-local_pos.y, local_pos.x).normalize();
         let velocity = tangent * orbit_speed;
 
         // Small jitter for natural look
