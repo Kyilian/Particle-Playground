@@ -6,7 +6,6 @@ use pp_render::RenderContext;
 pub struct BenchmarkScene {
     gravity: f32,
     particle_radius: f32,
-    color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
 
@@ -24,7 +23,6 @@ impl BenchmarkScene {
     pub fn new() -> Self {
         Self {
             gravity: 9.81,
-            color: [1.0, 0.4, 0.4, 1.0],
             particle_radius: 2.0,
             collider_radius: 450.0,
             collider_old: 450.0,
@@ -112,7 +110,6 @@ impl Scene for BenchmarkScene {
 
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            self.color, // Rot
             self.camera_offset,
             self.camera_zoom,
         );
@@ -131,7 +128,7 @@ impl Scene for BenchmarkScene {
     ) {
     }
 
-    fn handle_scroll(&mut self, world: &mut World, mouse_pos: Vec2, scroll_y: f32) {}
+    fn handle_scroll(&mut self, _world: &mut World, _mouse_pos: Vec2, _scroll_y: f32) {}
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
     fn on_mouse_release(
         &mut self,

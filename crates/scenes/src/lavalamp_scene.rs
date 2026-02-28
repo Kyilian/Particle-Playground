@@ -97,7 +97,6 @@ impl Scene for LavaLampScene {
     ) {
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            [0.0; 4],
             self.camera_offset,
             self.camera_zoom,
         );

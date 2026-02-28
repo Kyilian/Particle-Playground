@@ -1,6 +1,6 @@
 use crate::galaxy;
 pub use crate::neighbor_grid::NeighborGrid;
-use crate::quadtree::{Quadrant, Quadtree};
+use crate::quadtree::Quadtree;
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
 

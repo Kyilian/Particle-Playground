@@ -9,10 +9,10 @@ pub struct RectCollider {
 
 impl RectCollider {
     pub fn new(center: Vec2, width: f32, height: f32) -> Self {
-        return Self {
+        Self {
             center,
             width,
             height,
-        };
+        }
     }
 }

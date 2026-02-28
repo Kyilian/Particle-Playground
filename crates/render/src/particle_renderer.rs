@@ -1,4 +1,5 @@
 use pp_physics::Particle;
+use std::cell::Cell;
 use wgpu::util::DeviceExt;
 use wgpu::{Device, Queue, SurfaceConfiguration};
 
@@ -79,6 +80,12 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 }
 "#;
 
+//Enum for color mode to switch between heatmap and fixed color
+#[derive(Clone, Copy, PartialEq)]
+pub enum ColorMode {
+    Heatmap,
+    ColorFixed([f32; 4]),
+}
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct GlobalUniforms {
@@ -100,6 +107,7 @@ pub struct ParticleRenderer {
     max_particles: u32,  // can later be used for buffer capacity
 
     pub size: (u32, u32), //for resizing
+    pub color_mode: Cell<ColorMode>,
 }
 
 // representation of a particle in GPU
@@ -300,6 +308,7 @@ impl ParticleRenderer {
             instance_count: 0,
             max_particles,
             size: (config.width, config.height),
+            color_mode: Cell::new(ColorMode::Heatmap),
         }
     }
 
@@ -308,19 +317,13 @@ impl ParticleRenderer {
     }
 
     //To call the scene
-    pub fn update_render_settings(
-        &self,
-        queue: &Queue,
-        color: [f32; 4],
-        camera_offset: glam::Vec2,
-        zoom: f32,
-    ) {
+    pub fn update_render_settings(&self, queue: &Queue, camera_offset: glam::Vec2, zoom: f32) {
         let width = self.size.0 as f32;
         let height = self.size.1 as f32;
 
         let uniforms = GlobalUniforms {
             screen_size_wrapper: [width, height, 0.0, 0.0],
-            _padding: color,
+            _padding: [0.0; 4], //not used anymore but still needed for alignment. Before it was used for color
             camera: [camera_offset.x, camera_offset.y, zoom, 0.0],
         };
 
@@ -338,38 +341,32 @@ impl ParticleRenderer {
         let color_fast = [1.0, 0.2, 0.2, 1.0];
         let max_speed = 5.0;
 
-        //Particle -> ParticleInstance
         let instances: Vec<ParticleInstance> = particles
             .iter()
             .map(|p| {
-                if p.is_magnet {
-                    ParticleInstance {
-                        position: [p.pos.x, p.pos.y],
-                        color: p.color, // use the colors of the magnets
-                        radius: p.radius,
-                        _padding: 0.0,
-                    }
+                let color = if p.is_magnet {
+                    p.color
                 } else {
-                    //  calculate speed
-                    let velocity = p.pos - p.old_pos;
-                    let speed = velocity.length();
-
-                    // maps the speed on a 0.0 to 1.0 scale
-                    let t = (speed / max_speed).clamp(0.0, 1.0);
-
-                    // gives the partile a color based on its speed
-                    let r = color_slow[0] * (1.0 - t) + color_fast[0] * t;
-                    let g = color_slow[1] * (1.0 - t) + color_fast[1] * t;
-                    let b = color_slow[2] * (1.0 - t) + color_fast[2] * t;
-
-                    let alpha = if p.is_magnet { 0.01 } else { 1.0 };
-
-                    ParticleInstance {
-                        position: [p.pos.x, p.pos.y],
-                        color: [r, g, b, alpha],
-                        radius: p.radius,
-                        _padding: 0.0,
+                    match self.color_mode.get() {
+                        ColorMode::Heatmap => {
+                            let velocity = p.pos - p.old_pos;
+                            let t = (velocity.length() / max_speed).clamp(0.0, 1.0);
+                            [
+                                color_slow[0] * (1.0 - t) + color_fast[0] * t,
+                                color_slow[1] * (1.0 - t) + color_fast[1] * t,
+                                color_slow[2] * (1.0 - t) + color_fast[2] * t,
+                                1.0,
+                            ]
+                        }
+                        ColorMode::ColorFixed(c) => c,
                     }
+                };
+
+                ParticleInstance {
+                    position: [p.pos.x, p.pos.y],
+                    color,
+                    radius: p.radius,
+                    _padding: 0.0,
                 }
             })
             .collect();
@@ -409,5 +406,24 @@ mod tests {
             48,
             "GlobalUniforms muss exakt 48 Bytes groß sein"
         );
+    }
+}
+//Ai Unit Test with claude AI
+#[test]
+fn test_color_mode_cell_set_get() {
+    let mode = Cell::new(ColorMode::Heatmap);
+    mode.set(ColorMode::ColorFixed([1.0, 0.0, 0.0, 1.0]));
+
+    match mode.get() {
+        ColorMode::ColorFixed(c) => assert_eq!(c, [1.0, 0.0, 0.0, 1.0]),
+        _ => panic!("Sollte ColorFixed  sein nach set()"),
+    }
+}
+#[test]
+fn test_solid_mode_ignores_speed() {
+    let solid = [0.0, 1.0, 0.0, 1.0];
+    match ColorMode::ColorFixed(solid) {
+        ColorMode::ColorFixed(c) => assert_eq!(c, solid),
+        _ => panic!("Sollte ColorFixed sein"),
     }
 }

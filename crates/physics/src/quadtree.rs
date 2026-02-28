@@ -140,7 +140,7 @@ impl Quadtree {
             self.nodes.push(Node::new(nexts[i], quads[i]));
         }
 
-        return children;
+        children
     }
     //traverse the tree to find the correct position for the particle,
     //if there is already a particle in the quadrant, subdivide it and move the particles into the new quadrants until we find an empty quadrant or reach the max depth

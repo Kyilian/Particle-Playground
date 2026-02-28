@@ -1,7 +1,7 @@
 use super::Scene;
 use glam::Vec2;
 use pp_physics::{world::Magnet, CircleCollider, Particle, World};
-use pp_render::RenderContext;
+use pp_render::{ColorMode, RenderContext};
 use rand::prelude::*;
 
 //The main Pacticle playground scene, to play around with the Particles
@@ -25,6 +25,7 @@ pub struct FallingParticles {
     particle_radius: f32,
     magnet_radius: f32,
     magnet_strength: f32,
+    color_mode: ColorMode,
     color: [f32; 4],
     pub collider_radius: f32,
     collider_old: f32,
@@ -41,6 +42,7 @@ impl FallingParticles {
         Self {
             gravity: 9.81, // standardvalue
             spawnrate: None,
+            color_mode: ColorMode::Heatmap, //Start with a heatmap
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
             magnet_radius: 200.0,
@@ -105,10 +107,11 @@ impl Scene for FallingParticles {
 
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
-            self.color, // Rot
             self.camera_offset,
             self.camera_zoom,
         );
+
+        ctx.particle_renderer.color_mode.set(self.color_mode);
 
         //draw the particles
         ctx.particle_renderer.render(render_pass);
@@ -149,7 +152,7 @@ impl Scene for FallingParticles {
                         radius: self.magnet_radius,
                     });
                     let mut magnet_p = Particle::new(mouse_pos, self.magnet_radius);
-                    let density = (self.magnet_strength.abs() / 10000.0);
+                    let density = self.magnet_strength.abs() / 10000.0;
                     // red for pull, blue for push
                     let new_color = if self.magnet_strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
@@ -196,8 +199,7 @@ impl Scene for FallingParticles {
         match self.current_scroll_mode {
             MouseScrollMode::ResizeMagnet => {
                 if let Some(m) = nearest_magnet {
-                    let old_radius = m.radius;
-                    m.radius = (m.radius + scroll_y * 15.0);
+                    m.radius += scroll_y * 15.0;
 
                     // synchronize particle value
                     if let Some(p) = world
@@ -214,7 +216,7 @@ impl Scene for FallingParticles {
                     m.strength = (m.strength + scroll_y * 50.0).clamp(-1000.0, 1000.0);
 
                     // calculation of density based on strength
-                    let density = (m.strength.abs() / 10000.0);
+                    let density = m.strength.abs() / 10000.0;
                     // red for pull, blue for push
                     let new_color = if m.strength >= 0.0 {
                         [1.0, 0.0, 0.0, density]
@@ -329,7 +331,24 @@ impl Scene for FallingParticles {
                 _world.magnets.clear();
                 _world.particles.retain(|p| !p.is_magnet);
             }
+            ui.separator();
+            let mut use_heatmap = self.color_mode == ColorMode::Heatmap;
+            if ui.checkbox(&mut use_heatmap, "Heatmap").changed() {
+                self.color_mode = if use_heatmap {
+                    ColorMode::Heatmap
+                } else {
+                    ColorMode::ColorFixed(self.color)
+                };
+            }
 
+            if !use_heatmap {
+                let mut rgb = [self.color[0], self.color[1], self.color[2]];
+                if ui.color_edit_button_rgb(&mut rgb).changed() {
+                    self.color = [rgb[0], rgb[1], rgb[2], 1.0];
+                    self.color_mode = ColorMode::ColorFixed(self.color);
+                }
+            }
+            ui.separator();
             if ui.button("Alles zurücksetzen").clicked() {
                 self.reset(_world);
             }

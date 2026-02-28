@@ -2,7 +2,6 @@ use glam::Vec2;
 
 use pp_physics::World;
 
-use image;
 use pp_render::{ParticleRenderer, RenderContext};
 use pp_scenes::{Scene, SceneType};
 use std::sync::Arc; //Arc for dual ownership
@@ -189,9 +188,7 @@ impl RenderWindow {
                     event: ref win_event,
                     ..
                 } => {
-                    let response = render_window
-                        .egui_state
-                        .on_window_event(&*window, &win_event);
+                    let response = render_window.egui_state.on_window_event(&window, win_event);
                     if response.consumed {
                         return;
                     }
@@ -292,16 +289,13 @@ impl RenderWindow {
                     last_time = current_time;
                     accumulator += frame_time;
 
-                    match &mut render_window.app_state {
-                        AppState::Running { scene, world, .. } => {
-                            world.fps = fps;
+                    if let AppState::Running { scene, world, .. } = &mut render_window.app_state {
+                        world.fps = fps;
 
-                            while accumulator >= TIME_STEP {
-                                scene.update(world, TIME_STEP);
-                                accumulator -= TIME_STEP;
-                            }
+                        while accumulator >= TIME_STEP {
+                            scene.update(world, TIME_STEP);
+                            accumulator -= TIME_STEP;
                         }
-                        _ => {}
                     }
 
                     if let AppState::Running { world, .. } = &render_window.app_state {
@@ -310,7 +304,7 @@ impl RenderWindow {
                             .update_particles(&world.particles, &render_window.queue);
                     }
 
-                    let raw_input = render_window.egui_state.take_egui_input(&*window);
+                    let raw_input = render_window.egui_state.take_egui_input(&window);
                     render_window.egui_state.egui_ctx().begin_frame(raw_input);
 
                     render_window.render_ui();
@@ -377,6 +371,10 @@ impl RenderWindow {
                                 );
                             }
                             ui.set_max_size(egui::vec2(400.0, 600.0));
+
+                            ui.style_mut()
+                                .text_styles
+                                .insert(egui::TextStyle::Heading, egui::FontId::proportional(32.0));
                             ui.add_space(ui.available_height() * 0.15);
                             ui.heading("🎮 Particle Playground");
                             ui.add_space(10.0);

@@ -19,7 +19,7 @@ impl Particle {
             old_pos: pos,
             acc: Vec2::ZERO,
             mass: 10.0,
-            radius: radius,
+            radius,
             is_magnet: false,
             color: [1.0, 1.0, 1.0, 1.0],
         }
@@ -34,8 +34,8 @@ impl Particle {
             pos,
             old_pos: pos,
             acc: Vec2::ZERO,
-            mass: mass,
-            radius: radius,
+            mass,
+            radius,
             is_magnet: false,
             color: [1.0, 1.0, 1.0, 1.0],
         }
