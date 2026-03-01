@@ -2919,6 +2919,7 @@ version = "0.1.0"
 dependencies = [
  "glam",
  "rand 0.8.5",
+ "rayon",
 ]
 
 [[package]]

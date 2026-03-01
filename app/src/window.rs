@@ -177,7 +177,7 @@ impl RenderWindow {
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
-        const TIME_STEP: f32 = 1.0 / 120.0; // 120 Hz physics
+        const TIME_STEP: f32 = 1.0 / 60.0; // 60 Hz physics
         let mut accumulator = 0.0; // "time-memory"
 
         // runs the event loop

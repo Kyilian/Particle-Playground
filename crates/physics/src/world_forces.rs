@@ -1,12 +1,13 @@
 use crate::quadtree::Quadrant;
 use crate::World;
+use rayon::prelude::*;
 
 impl World {
     /// Applies gravity to all particles.
     pub fn apply_forces(&mut self) {
-        for p in &mut self.particles {
+        self.particles.par_iter_mut().for_each(|p| {
             p.add_force(self.gravity);
-        }
+        });
     }
 
     //O(n^2) gravity calculation for small number of particles
@@ -74,9 +75,9 @@ impl World {
         let gravity = self.gravity.y; //takes the gravity from the scene, so we can change it in runtime
 
         self.quadtree.propagate();
-
-        for particle in &mut self.particles {
+        //Used the par_iter function from the rayon library to enable parallelisme for the calculation
+        self.particles.par_iter_mut().for_each(|particle| {
             particle.acc = self.quadtree.acc(particle.pos) * gravity;
-        }
+        });
     }
 }
