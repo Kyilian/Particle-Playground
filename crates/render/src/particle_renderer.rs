@@ -347,6 +347,8 @@ impl ParticleRenderer {
                 let color = if p.is_magnet {
                     p.color
                 } else {
+                    //Color:
+                    //Switch between heatmap and a solid color
                     match self.color_mode.get() {
                         ColorMode::Heatmap => {
                             let velocity = p.pos - p.old_pos;

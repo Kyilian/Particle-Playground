@@ -1,5 +1,5 @@
-use crate::quadtree::Quadrant;
 use crate::World;
+use crate::quadtree::Quadrant;
 use rayon::prelude::*;
 
 impl World {

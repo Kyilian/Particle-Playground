@@ -5,10 +5,35 @@ Welcome to the Particle Playground, a 2D sandbox build in Rust. The project uses
 ## Getting Started
 1. Install [Rust](https://www.rust-lang.org/tools/install)
 2. Clone the repository
+```bash
+git clone https://github.com/Kyilian/Particle-Playground.git
+```
 3. Open the folder in a terminal
-4. Run `cargo run --release --bin pp_app`
+```bash
+cd Particle-Playground
+```
+4. Run `cargo run --release`
 6. Choose a scene
 5. Enjoy
+
+![Launcher Screenshot](/assets/launcher.png)
+
+![Ingame Screenshot](/assets/game.png)
+
+## Showcase
+
+[![Particle Playground Showcase](https://img.youtube.com/vi/QHup1YOwdOk/maxresdefault.jpg)](https://www.youtube.com/watch?v=QHup1YOwdOk)
+
+## Project Structure
+
+The project is organized as a Cargo workspace with four crates:
+
+| Crate | Description |
+|-------|-------------|
+| `app` | Window management, event loop, egui integration |
+| `physics` | Verlet integration, collisions, gravity, quadtree |
+| `render` | GPU rendering via wgpu with instanced particle drawing |
+| `scenes` | Individual simulations implementing the `Scene` trait |
 
 ## Scenes
 
@@ -81,7 +106,7 @@ A gravitational simulation using direct pairwise force calculation between every
 - Particle size, particle mass, and particle radius sliders
 - Live FPS and particle count display
 
-**Algorithm:** Every particle exerts gravitational force on every other particle each frame. A softening parameter prevents singularities at close distances. Complexity: **O(n²)**.
+**Algorithm:** Every particle exerts gravitational force on every other particle each frame. Complexity: **O(n²)**.
 
 ---
 
@@ -128,7 +153,7 @@ A lava lamp simulation using oscillating magnets to push and pull particles insi
 
 - **Gemini** — Generating unit tests
 - **Claude** — Debugging and code generation
-- **ChatGPT** — Debugging and code generation
+- **ChatGPT** — Debugging, refactoring, background image & code generation
 
 ## Testing
 

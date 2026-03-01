@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/*","app"]
+default-members = ["app"]
 
 [workspace.dependencies]
 #Core und Window handeling
@@ -49,4 +50,3 @@ pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
 pp_app ={ path= "./app"}
-pp_asssets = { path = "./assets" }

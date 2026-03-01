@@ -27,7 +27,7 @@ pub struct TestScene {
 impl TestScene {
     pub fn new() -> Self {
         Self {
-            gravity: 9.81, 
+            gravity: 9.81,
             spawnrate: None,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
@@ -94,7 +94,6 @@ impl Scene for TestScene {
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
-
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.camera_offset,
@@ -168,7 +167,7 @@ impl Scene for TestScene {
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
         self.gravity = 9.81;
-        _world.clear_particles(); 
+        _world.clear_particles();
     }
 
     //Basic UI to test Sliders and Buttos
@@ -201,23 +200,22 @@ impl Scene for TestScene {
                     _world.clear_collider();
                     _world.clear_rect_collider();
                     _world.add_circle_collider(CircleCollider {
-                    center: Vec2::new(0.0, 0.0),
-                    radius: self.collider_radius,
-                });
+                        center: Vec2::new(0.0, 0.0),
+                        radius: self.collider_radius,
+                    });
 
-                self.collider_old = self.collider_radius;
-
-                }else {
+                    self.collider_old = self.collider_radius;
+                } else {
                     _world.clear_collider();
-                _world.clear_rect_collider();
+                    _world.clear_rect_collider();
 
-                _world.add_rect_collider(RectCollider {
-                center: Vec2::new(0.0, 0.0),
-                width: self.rect_size.x,
-                height: self.rect_size.y,
-                });
-            
-            }}
+                    _world.add_rect_collider(RectCollider {
+                        center: Vec2::new(0.0, 0.0),
+                        width: self.rect_size.x,
+                        height: self.rect_size.y,
+                    });
+                }
+            }
             ui.separator();
             ui.add(
                 egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Circle Collider"),

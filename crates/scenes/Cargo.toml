@@ -1,14 +1,14 @@
 [package]
 name = "pp_scenes"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 pp_physics = { path = "../physics" }
 pp_render = { path = "../render" }
 
 
-egui =  {workspace = true}
+egui = {workspace = true}
 glam = {workspace = true}
 wgpu ={ workspace = true}
 rand ={ workspace = true}

@@ -7,8 +7,8 @@ use rand::prelude::*;
 //A N-Body simutlation using the Barnes-Hut algorithm to optimize the gravity calculation
 //Controlls:
 //Left Click: Spawn a single particle at the mouse position
-//Right Click: Spawn a small galaxy of particles around the mouse position with a random velocity to simulate a small galaxy
-//Middle Click: Spawn a heavy particle that attracts other particles with a strong force, also allows to drag the camera
+//Right Click: Spawn a small galaxy of particles around the mouse position with a random velocity to simulate a small galaxy || Spawn a Galaxy with 3000 Pixels
+//Middle Click: Drag the camera
 //Mouse Scroll: Zoom in and out to the mouse position
 pub struct BarnesHutNbody {
     gravity: glam::Vec2,
@@ -85,6 +85,7 @@ impl Scene for BarnesHutNbody {
         }
 
         if right_click {
+            //Diffent modes for the right click
             match self.current_mode {
                 MouseClickMode::MultipleParticles => {
                     //spawn a small galaxy of particles around the mouse position
@@ -116,8 +117,11 @@ impl Scene for BarnesHutNbody {
                     }
                 }
                 MouseClickMode::SpawnHeavy => {
-                    let r = self.particle_radius * 3.0;
-                    let mut p = Particle::new_with_mass(world_mouse_pos, self.mass, r);
+                    let mut p = Particle::new_with_mass(
+                        world_mouse_pos,
+                        2000.0,
+                        self.particle_radius * 3.0,
+                    );
 
                     p.old_pos = p.pos;
 
@@ -129,7 +133,7 @@ impl Scene for BarnesHutNbody {
             }
         }
 
-        // Middle click: at the moment, spawnes a heavy particle and drags the camera
+        // Middle click:  Drags the camera
         if is_middle {
             self.is_dragging = true;
             self.last_mouse_pos = mouse_pos;
@@ -210,7 +214,7 @@ impl Scene for BarnesHutNbody {
                 egui::Slider::new(&mut self.particle_radius, 1.0..=100.0)
                     .text("Particle Size of new particles"),
             );
-            ui.add(egui::Slider::new(&mut self.mass, 10.0..=10000000000.0).text("Mass of new particles"));
+            ui.add(egui::Slider::new(&mut self.mass, 10.0..=100000.0).text("Mass of new particles"));
             ui.separator();
             ui.add(egui::Slider::new(&mut self.gravity.y, 0.0..=1000.0).text("Gravity "));
 
