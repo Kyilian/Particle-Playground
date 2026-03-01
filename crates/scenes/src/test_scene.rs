@@ -27,7 +27,7 @@ pub struct TestScene {
 impl TestScene {
     pub fn new() -> Self {
         Self {
-            gravity: 9.81, // Standardwert, vielleicht anpassen, bin mir über die Auswirkungen nicht ganz sicher
+            gravity: 9.81,
             spawnrate: None,
             color: [1.0, 0.2, 0.2, 1.0],
             particle_radius: 2.0,
@@ -68,7 +68,7 @@ impl Scene for TestScene {
             _world.clear_collider();
             _world.clear_rect_collider();
             _world.add_circle_collider(CircleCollider {
-                center: Vec2::new(0.0, 0.0), // (0,0) is now the center
+                center: Vec2::new(0.0, 0.0),
                 radius: self.collider_radius,
             });
 
@@ -94,8 +94,6 @@ impl Scene for TestScene {
         ctx: &RenderContext<'rpass>,
         render_pass: &mut wgpu::RenderPass<'rpass>,
     ) {
-        //let width = ctx.renderer.config.width as f32;
-
         ctx.particle_renderer.update_render_settings(
             ctx.queue,
             self.camera_offset,
@@ -136,7 +134,7 @@ impl Scene for TestScene {
                 println!("No particle close to {:?}", mouse_pos);
             }
 
-            let random_spawn_num: u8 = rng.gen();
+            let random_spawn_num: u8 = rng.r#gen();
 
             for _i in 0..random_spawn_num {
                 let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
@@ -147,7 +145,7 @@ impl Scene for TestScene {
         }
 
         if is_middle {
-            let random_color: [f32; 4] = rng.gen();
+            let random_color: [f32; 4] = rng.r#gen();
 
             self.color = random_color;
         }
@@ -169,7 +167,7 @@ impl Scene for TestScene {
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
         self.gravity = 9.81;
-        _world.clear_particles(); //zu clear_particles geändert damit collidor vorhanden bleibt
+        _world.clear_particles();
     }
 
     //Basic UI to test Sliders and Buttos
@@ -197,7 +195,28 @@ impl Scene for TestScene {
 
             if ui.button("Switch Colliders").clicked() {
                 self.rect_collider_active = !self.rect_collider_active;
+
+                if !self.rect_collider_active {
+                    _world.clear_collider();
+                    _world.clear_rect_collider();
+                    _world.add_circle_collider(CircleCollider {
+                        center: Vec2::new(0.0, 0.0),
+                        radius: self.collider_radius,
+                    });
+
+                    self.collider_old = self.collider_radius;
+                } else {
+                    _world.clear_collider();
+                    _world.clear_rect_collider();
+
+                    _world.add_rect_collider(RectCollider {
+                        center: Vec2::new(0.0, 0.0),
+                        width: self.rect_size.x,
+                        height: self.rect_size.y,
+                    });
+                }
             }
+            ui.separator();
             ui.add(
                 egui::Slider::new(&mut self.collider_radius, 50.0..=1000.0).text("Circle Collider"),
             );

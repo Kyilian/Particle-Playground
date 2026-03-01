@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/*","app"]
+default-members = ["app"]
 
 [workspace.dependencies]
 #Core und Window handeling
@@ -32,18 +33,20 @@ rand = "0.8"
 rand_distr = "0.4"
 
 #Config laden
-#we dont use these dependencies
-serde = { version = "1.0", features = ["derive"] }
-ron = "0.8"
+#we dont use these dependencies rn
+#serde = { version = "1.0", features = ["derive"] }
+#ron = "0.8"
 
 #Benchmarks
 criterion = "0.8.0"
 
 #Background Image
-image = { version = "0.25", features = ["png", "jpeg"] }
+image = { version = "0.24", features = ["png", "jpeg"] }
+
+#Multithreading
+rayon = "1.10"
 
 pp_physics = { path = "./crates/physics" }
 pp_render = { path = "./crates/render" }
 pp_scenes = { path = "./crates/scenes" }
 pp_app ={ path= "./app"}
-pp_asssets = { path = "./assets" }

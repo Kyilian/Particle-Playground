@@ -23,11 +23,11 @@ pub fn galaxy(n: usize, pos: Vec2) -> Vec<Particle> {
 
     while particles.len() < n {
         // Uniform area distribution in disc
-        let angle = rng.gen::<f32>() * std::f32::consts::TAU;
+        let angle = rng.r#gen::<f32>() * std::f32::consts::TAU;
         let (sin, cos) = angle.sin_cos();
 
         let t = inner_radius / outer_radius;
-        let u: f32 = rng.gen::<f32>() * (1.0 - t * t) + t * t;
+        let u: f32 = rng.r#gen::<f32>() * (1.0 - t * t) + t * t;
         let r = outer_radius * u.sqrt();
 
         let local_pos = Vec2::new(cos, sin) * r;

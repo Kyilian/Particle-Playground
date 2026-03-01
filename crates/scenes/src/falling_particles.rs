@@ -137,8 +137,7 @@ impl Scene for FallingParticles {
                     world.add_particle(Particle::new(mouse_pos, self.particle_radius));
                 }
                 MouseClickMode::SpawnCluster => {
-                    let random_spawn_num: u8 = rng.gen();
-                    for _i in 0..random_spawn_num {
+                    for _i in 0..100 {
                         let x = rng.gen_range(mouse_pos.x - 20.0..mouse_pos.x + 20.0);
                         let y = rng.gen_range(mouse_pos.y - 20.0..mouse_pos.y + 20.0);
                         let random_pos: Vec2 = Vec2::new(x, y);
@@ -178,9 +177,10 @@ impl Scene for FallingParticles {
         }
 
         if is_middle {
-            let random_color: [f32; 4] = rng.gen();
+            let random_color: [f32; 4] = rng.r#gen();
 
             self.color = random_color;
+            self.color_mode = ColorMode::ColorFixed(self.color);
         }
     }
 
@@ -235,6 +235,8 @@ impl Scene for FallingParticles {
             }
         }
     }
+
+    //not used here, for potential future camera implementation
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
     fn on_mouse_release(
         &mut self,
@@ -245,6 +247,7 @@ impl Scene for FallingParticles {
         _is_middle: bool,
     ) {
     }
+
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;

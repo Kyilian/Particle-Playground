@@ -1,8 +1,9 @@
 [package]
 name = "pp_physics"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 glam = { workspace = true }
 rand = {workspace = true}
+rayon = {workspace = true}

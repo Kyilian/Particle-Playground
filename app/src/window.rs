@@ -177,7 +177,7 @@ impl RenderWindow {
         let mut mouse_pos = Vec2::ZERO;
 
         //Adding a const time step so the pixels dont excelerate when the window is resized
-        const TIME_STEP: f32 = 1.0 / 120.0; // 120 Hz physics
+        const TIME_STEP: f32 = 1.0 / 60.0; // 60 Hz physics
         let mut accumulator = 0.0; // "time-memory"
 
         // runs the event loop
@@ -194,21 +194,24 @@ impl RenderWindow {
                     }
                     // CHANGE: here stood "match event" before
                     // we now match directly on "win_event, so the strukture isn't duplicated
+
+                    //Input
+                    //We handle the different mouse inputs in the scenes
                     match win_event {
                         WindowEvent::CloseRequested => {
                             elwt.exit();
                         }
                         WindowEvent::KeyboardInput { event, .. } => {
-                            if event.state == ElementState::Pressed {
-                                if let Key::Named(NamedKey::Escape) = event.logical_key {
-                                    // ESC: back to launcher
-                                    match &render_window.app_state {
-                                        AppState::Running { .. } => {
-                                            render_window.return_to_launcher();
-                                        }
-                                        AppState::Launcher { .. } => {
-                                            elwt.exit();
-                                        }
+                            if event.state == ElementState::Pressed
+                                && let Key::Named(NamedKey::Escape) = event.logical_key
+                            {
+                                // ESC: back to launcher
+                                match &render_window.app_state {
+                                    AppState::Running { .. } => {
+                                        render_window.return_to_launcher();
+                                    }
+                                    AppState::Launcher { .. } => {
+                                        elwt.exit();
                                     }
                                 }
                             }
@@ -233,18 +236,15 @@ impl RenderWindow {
 
                             if let AppState::Running { scene, world, .. } =
                                 &mut render_window.app_state
+                                && !response.consumed
                             {
-                                if !response.consumed {
-                                    if *state == ElementState::Pressed {
-                                        scene.on_click(
-                                            world, mouse_pos, is_right, is_left, is_middle,
-                                        );
-                                    } else if *state == ElementState::Released {
-                                        // --- HIER NEU EINFÜGEN ---
-                                        scene.on_mouse_release(
-                                            world, mouse_pos, is_right, is_left, is_middle,
-                                        );
-                                    }
+                                if *state == ElementState::Pressed {
+                                    scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
+                                } else if *state == ElementState::Released {
+                                    // --- HIER NEU EINFÜGEN ---
+                                    scene.on_mouse_release(
+                                        world, mouse_pos, is_right, is_left, is_middle,
+                                    );
                                 }
                             }
                         }
@@ -338,11 +338,14 @@ impl RenderWindow {
         let mut should_return = false;
 
         match &mut self.app_state {
+            //The Main Launcher to select different scenes
             AppState::Launcher { selected_scene } => {
                 egui::CentralPanel::default()
                     .frame(egui::Frame::none())
                     .show(&ctx, |ui| {
                         ui.vertical_centered(|ui| {
+                            //Background Image
+                            //
                             if let Some(texture) = &self.background_texture {
                                 let panel_rect = ui.max_rect();
 
@@ -370,6 +373,7 @@ impl RenderWindow {
                                     egui::Color32::WHITE,
                                 );
                             }
+                            // Title
                             ui.set_max_size(egui::vec2(400.0, 600.0));
 
                             ui.style_mut()
@@ -383,6 +387,7 @@ impl RenderWindow {
 
                             ui.set_max_width(500.0);
 
+                            // Scene Selection
                             for scene_type in SceneType::all() {
                                 let is_selected = *selected_scene == Some(*scene_type);
 
@@ -420,7 +425,7 @@ impl RenderWindow {
                         ui.add_space(20.0);
 
                         let start_enabled = selected_scene.is_some();
-
+                        //Start Button
                         ui.vertical_centered(|ui| {
                             if ui
                                 .add_enabled(
@@ -439,6 +444,7 @@ impl RenderWindow {
                 scene_type,
                 world,
             } => {
+                //Navigation
                 egui::Window::new("Navigation")
                     .anchor(egui::Align2::RIGHT_TOP, [-10.0, 10.0])
                     .resizable(false)

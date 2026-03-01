@@ -15,6 +15,7 @@ pub trait Scene {
         render_pass: &mut wgpu::RenderPass<'rpass>,
     );
 
+    //defining the input in the scene itself and not in the window for customizability
     fn on_click(
         &mut self,
         world: &mut World,

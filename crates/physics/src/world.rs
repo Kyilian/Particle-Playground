@@ -3,6 +3,7 @@ pub use crate::neighbor_grid::NeighborGrid;
 use crate::quadtree::Quadtree;
 use crate::{CircleCollider, Particle, RectCollider};
 use glam::Vec2;
+use rayon::prelude::*;
 
 //Adding const to simply change the values if needed
 const DEFAULT_GRAVITY: Vec2 = Vec2::new(0.0, 9.81);
@@ -64,11 +65,12 @@ impl World {
     }
 
     pub fn update_positions(&mut self, dt: f32) {
-        for p in &mut self.particles {
+        self.particles.par_iter_mut().for_each(|p| {
+            //Implemented the rayon library enable parallelism in simple loops
             if p.is_magnet {
                 // magnets dont move
                 p.old_pos = p.pos;
-                continue;
+                return;
             }
             //dt : delta time Pixel pro sekunde nicht pro frame
             let temp = p.pos;
@@ -79,7 +81,7 @@ impl World {
 
             // Reset acceleration for next frame
             p.acc = Vec2::ZERO;
-        }
+        });
     }
 
     //ein "Simulationsschritt“ (forces → integration → collisions)
