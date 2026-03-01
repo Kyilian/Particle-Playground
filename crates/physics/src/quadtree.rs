@@ -43,7 +43,7 @@ impl Quadrant {
 
     //find the quadrant from 0 to 3
     pub fn find_quadrant(&self, pos: Vec2) -> usize {
-        ((pos.y > self.center.y) as usize) << 1 | (pos.x > self.center.x) as usize
+        (((pos.y > self.center.y) as usize) << 1) | (pos.x > self.center.x) as usize
     }
     //split the quadrant and move the center into the new qadrant
     pub fn into_quadrant(mut self, quadrant: usize) -> Self {

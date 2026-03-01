@@ -202,16 +202,16 @@ impl RenderWindow {
                             elwt.exit();
                         }
                         WindowEvent::KeyboardInput { event, .. } => {
-                            if event.state == ElementState::Pressed
-                                && let Key::Named(NamedKey::Escape) = event.logical_key
-                            {
-                                // ESC: back to launcher
-                                match &render_window.app_state {
-                                    AppState::Running { .. } => {
-                                        render_window.return_to_launcher();
-                                    }
-                                    AppState::Launcher { .. } => {
-                                        elwt.exit();
+                            if event.state == ElementState::Pressed {
+                                if let Key::Named(NamedKey::Escape) = event.logical_key {
+                                    // ESC: back to launcher
+                                    match &render_window.app_state {
+                                        AppState::Running { .. } => {
+                                            render_window.return_to_launcher();
+                                        }
+                                        AppState::Launcher { .. } => {
+                                            elwt.exit();
+                                        }
                                     }
                                 }
                             }
@@ -236,15 +236,18 @@ impl RenderWindow {
 
                             if let AppState::Running { scene, world, .. } =
                                 &mut render_window.app_state
-                                && !response.consumed
                             {
-                                if *state == ElementState::Pressed {
-                                    scene.on_click(world, mouse_pos, is_right, is_left, is_middle);
-                                } else if *state == ElementState::Released {
-                                    // --- HIER NEU EINFÜGEN ---
-                                    scene.on_mouse_release(
-                                        world, mouse_pos, is_right, is_left, is_middle,
-                                    );
+                                if !response.consumed {
+                                    if *state == ElementState::Pressed {
+                                        scene.on_click(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    } else if *state == ElementState::Released {
+                                        // --- HIER NEU EINFÜGEN ---
+                                        scene.on_mouse_release(
+                                            world, mouse_pos, is_right, is_left, is_middle,
+                                        );
+                                    }
                                 }
                             }
                         }
