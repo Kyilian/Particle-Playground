@@ -150,11 +150,26 @@ A lava lamp simulation using oscillating magnets to push and pull particles insi
 ---
 
 ## Usage of AI/LLMs
-
-- **Gemini** — Generating unit tests
-- **Claude** — Debugging and code generation
-- **ChatGPT** — Debugging, refactoring, background image & code generation
-
+- **Gemini** 
+  - Learning how to use Git
+  - Refactoring code
+  - Generating Unit Tests
+  - Learning how to create a physics engine 
+  - General Questions about Rust and different libraries
+  - Suggestions for dependencies
+- **Claude** 
+  - Debugging (Quadtree, Gravity, Camera, egui Event-Handling)
+  - Understanding WGPU and shader pipeline
+  - Help with complex version-specific errors
+  - Help to implement complex functions
+  - Explanation of concepts (Verlet integration, Barnes-Hut algorithm)
+  - Help to understand new libraries 
+- **ChatGPT** 
+  - Find & fix bugs during development 
+  - Understand the principles behind the physics
+  - Refactoring code & help with complex fuctions
+  - Creating a Background Image
+  
 ## Testing
 
 All tests can be run with:
