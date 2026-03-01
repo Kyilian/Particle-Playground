@@ -42,6 +42,7 @@ criterion = "0.8.0"
 #Background Image
 image = { version = "0.25", features = ["png", "jpeg"] }
 
+#Multithreading
 rayon = "1.10"
 
 pp_physics = { path = "./crates/physics" }

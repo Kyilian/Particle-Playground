@@ -52,6 +52,7 @@ impl Scene for LavaLampScene {
         self.time += dt;
 
         world.magnets.clear();
+        
         //create some magnets that move up and down to create the lava lamp effect
         let y_pos_1 = (self.time * 1.5).sin() * 150.0 * self.change_sized;
         world.magnets.push(Magnet {

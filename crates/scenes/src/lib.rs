@@ -26,7 +26,7 @@ pub enum SceneType {
     BarnesHutNbody,
     LavaLamp,
 }
-
+//To add a scene, the scene must be included in all, display_name, description, and create_scene
 impl SceneType {
     //UI ausgabe von verfügbaren szenen
     pub fn all() -> &'static [SceneType] {

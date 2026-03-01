@@ -235,6 +235,8 @@ impl Scene for FallingParticles {
             }
         }
     }
+
+    //not used here, for potential future camera implementation
     fn on_mouse_move(&mut self, _world: &mut World, _mouse_pos: Vec2) {}
     fn on_mouse_release(
         &mut self,
@@ -245,6 +247,7 @@ impl Scene for FallingParticles {
         _is_middle: bool,
     ) {
     }
+
     //Reset the Simulation to Default values
     fn reset(&mut self, _world: &mut World) {
         self.spawnrate = None;
